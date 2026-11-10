@@ -1,0 +1,40 @@
+[
+ {
+  "kind": "Listing",
+  "data": {
+   "children": [
+    {
+     "kind": "t3",
+     "data": {
+      "subreddit": "algotrading",
+      "author": "paper_reader",
+      "title": "Interesting paper on market microstructure",
+      "selftext": "",
+      "url": "https://arxiv.org/abs/2401.00001",
+      "is_self": false,
+      "permalink": "/r/algotrading/comments/def/y/",
+      "score": 120,
+      "num_comments": 3,
+      "created_utc": 1731000000.0,
+      "preview": null
+     }
+    }
+   ]
+  }
+ },
+ {
+  "kind": "Listing",
+  "data": {
+   "children": [
+    {
+     "kind": "t1",
+     "data": {
+      "author": "a",
+      "body": "Nice find.",
+      "score": 5
+     }
+    }
+   ]
+  }
+ }
+]

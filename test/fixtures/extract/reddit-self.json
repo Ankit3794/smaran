@@ -1,0 +1,99 @@
+[
+ {
+  "kind": "Listing",
+  "data": {
+   "children": [
+    {
+     "kind": "t3",
+     "data": {
+      "subreddit": "algotrading",
+      "author": "quant_dev42",
+      "title": "Modeling slippage in a mean reversion backtest",
+      "selftext": "I have been backtesting a mean reversion strategy on SPY minute bars for six months. Results look good before costs, but after commissions and slippage the Sharpe drops from 2.1 to 0.6. Has anyone found a robust way to model slippage realistically?",
+      "url": "",
+      "is_self": true,
+      "permalink": "/r/algotrading/comments/abc/x/",
+      "score": 120,
+      "num_comments": 3,
+      "created_utc": 1731000000.0,
+      "preview": {
+       "images": [
+        {
+         "source": {
+          "url": "https://preview.redd.it/abc.png?width=640&amp;crop=smart&amp;auto=webp&amp;s=123",
+          "width": 640,
+          "height": 480
+         }
+        }
+       ]
+      }
+     }
+    }
+   ]
+  }
+ },
+ {
+  "kind": "Listing",
+  "data": {
+   "children": [
+    {
+     "kind": "t1",
+     "data": {
+      "author": "user1",
+      "body": "Comment number 1: I ran a similar backtest and slippage ate most of the edge.",
+      "score": 5
+     }
+    },
+    {
+     "kind": "t1",
+     "data": {
+      "author": "user2",
+      "body": "Comment number 2: I ran a similar backtest and slippage ate most of the edge.",
+      "score": 5
+     }
+    },
+    {
+     "kind": "more",
+     "data": {
+      "children": [
+       "x1",
+       "x2"
+      ]
+     }
+    },
+    {
+     "kind": "t1",
+     "data": {
+      "author": "user3",
+      "body": "Comment number 3: I ran a similar backtest and slippage ate most of the edge.",
+      "score": 5
+     }
+    },
+    {
+     "kind": "t1",
+     "data": {
+      "author": "user4",
+      "body": "Comment number 4: I ran a similar backtest and slippage ate most of the edge.",
+      "score": 5
+     }
+    },
+    {
+     "kind": "t1",
+     "data": {
+      "author": "user5",
+      "body": "Comment number 5: I ran a similar backtest and slippage ate most of the edge.",
+      "score": 5
+     }
+    },
+    {
+     "kind": "t1",
+     "data": {
+      "author": "user6",
+      "body": "Long word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word ",
+      "score": 5
+     }
+    }
+   ]
+  }
+ }
+]
