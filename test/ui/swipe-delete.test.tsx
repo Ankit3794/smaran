@@ -1,6 +1,6 @@
-// UI tests for swipe-left-to-delete on the Timeline: the card disappears at once, Undo brings it back, and the
-// save is only deleted from the database once the undo window has passed. Real SQLite; the swipe is simulated
-// by calling the row's "opened" callback (see test/ui/setup.ts), since Jest cannot drive a native gesture.
+// UI tests for Gmail-style swipe-to-delete on the Timeline: swiping a card left reveals a Delete button; tapping it
+// hides the card at once, Undo brings it back, and the save is only deleted from the database once the undo window
+// has passed. Real SQLite; Jest cannot swipe, so the revealed button is always rendered (see test/ui/setup.ts).
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
 import '@shopify/flash-list/jestSetup';
 import TimelineScreen from '@/app/(tabs)/index';
@@ -27,19 +27,25 @@ async function libraryWithOneSave() {
   return { db, id };
 }
 
-async function swipeLeft(id: number) {
-  const row = screen.getByTestId(`swipe-${id}`);
-  await act(async () => row.props.onSwipeableOpen('right'));
+async function tapRevealedDelete() {
+  await fireEvent.press(screen.getByLabelText('Delete save'));
 }
 
 const saveCount = async (db: Db) => (await db.getAllAsync('SELECT id FROM saves')).length;
 
 afterEach(() => jest.useRealTimers());
 
-it('hides a swiped card at once and deletes it after the undo window', async () => {
+it('opening the swipe alone deletes nothing', async () => {
   const { db, id } = await libraryWithOneSave();
+  await act(async () => screen.getByTestId(`swipe-${id}`).props.onSwipeableOpen?.('right'));
+  expect(screen.getByText('Options flow scanner')).toBeTruthy();
+  expect(await saveCount(db)).toBe(1);
+});
+
+it('tapping the revealed Delete hides the card at once and deletes it after the undo window', async () => {
+  const { db } = await libraryWithOneSave();
   jest.useFakeTimers();
-  await swipeLeft(id);
+  await tapRevealedDelete();
   expect(screen.queryByText('Options flow scanner')).toBeNull();
   expect(screen.getByText('Save deleted')).toBeTruthy();
   expect(await saveCount(db)).toBe(1);
@@ -50,9 +56,9 @@ it('hides a swiped card at once and deletes it after the undo window', async () 
 });
 
 it('Undo brings the card back and nothing is deleted', async () => {
-  const { db, id } = await libraryWithOneSave();
+  const { db } = await libraryWithOneSave();
   jest.useFakeTimers();
-  await swipeLeft(id);
+  await tapRevealedDelete();
   await fireEvent.press(screen.getByText('Undo'));
   expect(screen.getByText('Options flow scanner')).toBeTruthy();
   await act(async () => jest.advanceTimersByTime(UNDO_WINDOW_MS));
