@@ -22,6 +22,25 @@ export const DEFAULT_MODELS: Record<ProviderId, string> = {
   'gemini-sub': GEMINI_MODEL,
 };
 
+// The models offered by the Settings model picker, per provider family. The first entry is the default above.
+// Only models checked against each provider's docs are listed; adding one is a one-line change here.
+const CLAUDE_CHOICES = [
+  { id: 'claude-haiku-5-5', label: 'Haiku 5.5 · fast' },
+  { id: 'claude-sonnet-5-5', label: 'Sonnet 5.5' },
+  { id: 'claude-opus-5-5', label: 'Opus 5.5 · slowest' },
+];
+const OPENAI_CHOICES = [{ id: OPENAI_MODEL, label: 'GPT-6 Luna · fast' }];
+const GEMINI_CHOICES = [{ id: GEMINI_MODEL, label: 'Gemini 3.5 Flash-Lite · fast' }];
+
+export const MODEL_CHOICES: Record<ProviderId, Array<{ id: string; label: string }>> = {
+  'claude-key': CLAUDE_CHOICES,
+  'claude-sub': CLAUDE_CHOICES,
+  'openai-key': OPENAI_CHOICES,
+  'chatgpt-sub': OPENAI_CHOICES,
+  'gemini-key': GEMINI_CHOICES,
+  'gemini-sub': GEMINI_CHOICES,
+};
+
 // The latest reset time (epoch ms) the provider told us about, or undefined.
 function latestResetAt(headers: Headers): number | undefined {
   const times: number[] = [];

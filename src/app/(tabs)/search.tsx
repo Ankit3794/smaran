@@ -1,9 +1,10 @@
 // The Search tab: type a keyword, narrow it by time / source / topic, and see results grouped by topic.
 // Results come from useSearch (FTS5 via searchSaves); tapping a result opens the same SaveSheet as the Timeline.
 import { useState } from 'react';
-import { Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import type { Source } from '@/core/types';
+import { ChoiceModal } from '@/ui/components/ChoiceModal';
 import { DayHeader } from '@/ui/components/DayHeader';
 import { SaveCard } from '@/ui/components/SaveCard';
 import { SaveSheet } from '@/ui/components/SaveSheet';
@@ -49,27 +50,7 @@ function FilterChip<T extends { label: string }>({ current, choices, onPick }: {
         <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.ink }}>{current}</Text>
         <Text style={{ fontFamily: fonts.body, fontSize: 12, color: colors.muted }}>▾</Text>
       </Pressable>
-      {open && (
-        <Modal transparent animationType="fade" onRequestClose={() => setOpen(false)}>
-          <Pressable onPress={() => setOpen(false)} style={{ flex: 1, justifyContent: 'center', padding: 32, backgroundColor: 'rgba(0,0,0,0.3)' }}>
-            <View style={{ backgroundColor: colors.card, borderRadius: radius, paddingVertical: 6 }}>
-              {choices().map((choice) => (
-                <Pressable
-                  key={choice.label}
-                  accessibilityRole="button"
-                  onPress={() => {
-                    setOpen(false);
-                    onPick(choice);
-                  }}
-                  style={{ paddingVertical: 12, paddingHorizontal: 18 }}
-                >
-                  <Text style={{ fontFamily: choice.label === current ? fonts.bodySemiBold : fonts.body, fontSize: 14, color: colors.ink }}>{choice.label}</Text>
-                </Pressable>
-              ))}
-            </View>
-          </Pressable>
-        </Modal>
-      )}
+      {open && <ChoiceModal choices={choices()} current={current} onPick={onPick} onClose={() => setOpen(false)} />}
     </>
   );
 }

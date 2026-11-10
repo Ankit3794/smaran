@@ -250,6 +250,15 @@ export async function queueSummary(db: Db): Promise<{ waiting: number; reason: S
 }
 
 // "Retry now": makes every unfinished save due immediately instead of waiting for its scheduled retry time.
+// How many saves there are and how big the database file is, for the Settings "Saves on this phone" row.
+export async function libraryStats(db: Db): Promise<{ count: number; databaseBytes: number }> {
+  const count = await db.getFirstAsync<{ count: number }>('SELECT COUNT(*) AS count FROM saves');
+  const pages = await db.getFirstAsync<{ bytes: number }>(
+    'SELECT page_count * page_size AS bytes FROM pragma_page_count(), pragma_page_size()',
+  );
+  return { count: count?.count ?? 0, databaseBytes: pages?.bytes ?? 0 };
+}
+
 export async function retryNow(db: Db): Promise<void> {
   await db.runAsync(`UPDATE saves SET next_retry_at = NULL WHERE ${UNFINISHED}`);
 }
