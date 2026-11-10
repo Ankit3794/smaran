@@ -2,3 +2,13 @@
 node_modules/
 android/
 ios/
+
+# Expo / tooling
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+*.jks
+*.key
+.env*.local
+*.tsbuildinfo
