@@ -92,3 +92,13 @@ export async function topTags(db: Db, topicId: number, limit: number): Promise<s
   );
   return rows.map((row) => row.name);
 }
+
+// Most-used tag names across every topic, so the AI reuses existing tags instead of inventing near-duplicates.
+export async function topTagsOverall(db: Db, limit: number): Promise<string[]> {
+  const rows = await db.getAllAsync<{ name: string }>(
+    `SELECT t.name FROM tags t JOIN save_tags st ON st.tag_id = t.id
+     GROUP BY t.id ORDER BY COUNT(*) DESC, t.name LIMIT ?`,
+    limit,
+  );
+  return rows.map((row) => row.name);
+}
