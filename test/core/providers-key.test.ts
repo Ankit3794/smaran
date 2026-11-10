@@ -109,8 +109,8 @@ describe('mapHttpError', () => {
     expect(date.resetAt).toBe(Date.parse('Wed, 21 Oct 2099 07:28:00 GMT'));
   });
 
-  it('keeps 400 as provider_error', () => {
-    expect(mapHttpError(400, 'extra usage', new Headers()).kind).toBe('provider_error');
+  it('keeps an ordinary 400 as provider_error', () => {
+    expect(mapHttpError(400, 'bad request', new Headers()).kind).toBe('provider_error');
   });
 });
 

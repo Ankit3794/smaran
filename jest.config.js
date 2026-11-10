@@ -3,10 +3,10 @@
 const aliasToSource = { '^@/(.*)$': '<rootDir>/src/$1' };
 
 // Packages Babel must still convert: jest-expo's own list (Expo and React Native ship untranspiled code)
-// plus htmlparser2 and its helpers, which ship as ES modules that Jest can only run after conversion.
+// plus htmlparser2 and its helpers and @noble/hashes (PKCE), which ship as ES modules that Jest can only run after conversion.
 const esmPackages =
   '.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|react-navigation|@react-navigation|@sentry/react-native|native-base|standard-navigation|' +
-  'htmlparser2|domhandler|domutils|domelementtype|entities|dom-serializer';
+  '@noble/hashes|htmlparser2|domhandler|domutils|domelementtype|entities|dom-serializer';
 
 module.exports = {
   projects: [

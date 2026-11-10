@@ -1,5 +1,6 @@
-// Turns a failed provider HTTP response into an AiError, and holds the default model id per provider.
-// Every provider in src/ai/providers calls these so the background pipeline sees one error vocabulary.
+// Shared plumbing for every provider in src/ai/providers: the default model per provider, HTTP error mapping
+// (mapHttpError), the JSON POST helper (postJson) and the empty-text check (requireText).
+// Keeps the background pipeline seeing one error vocabulary no matter which provider answered.
 import { AiError, type ProviderId } from '@/ai/types';
 
 // Cheapest fast model of each provider, checked against official docs on 2026-11-10.
@@ -45,6 +46,8 @@ function latestResetAt(headers: Headers): number | undefined {
 export function mapHttpError(status: number, body: string, headers: Headers): AiError {
   const message = `HTTP ${status}: ${body.slice(0, 200)}`;
   if (status === 401) return new AiError('auth_expired', message);
+  // Claude subscriptions report an exhausted plan as a 400 rather than a 429.
+  if (status === 400 && /extra usage/i.test(body)) return new AiError('quota_exceeded', message);
   if (status === 429) {
     const resetAt = latestResetAt(headers);
     const isQuota = /quota|usage limit/i.test(body);

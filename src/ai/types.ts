@@ -28,6 +28,15 @@ export class AiError extends Error {
   }
 }
 
+// What a subscription sign-in gives us; `expiresAt` is epoch ms. Stored in secure storage, never in the database.
+export type OAuthTokens = {
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: number;
+  accountId?: string;
+  projectId?: string;
+};
+
 export interface AiProvider {
   id: ProviderId;
   generateText(request: { system: string; user: string; model: string; maxTokens: number }): Promise<string>;
