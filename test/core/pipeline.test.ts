@@ -3,7 +3,7 @@
 import { openTestDb } from '../helpers/sqlite';
 import { migrate } from '@/db/migrate';
 import { claimDue, getSave } from '@/db/saves';
-import { ingestInbox } from '@/pipeline/ingest';
+import { addShare, ingestInbox } from '@/pipeline/ingest';
 import { processSave, type PipelineDeps } from '@/pipeline/process';
 import { runQueue } from '@/pipeline/queue';
 import { nextRetryDelay } from '@/pipeline/retry';
@@ -370,5 +370,21 @@ describe('fix round: starvation, undo window, partial enrichment', () => {
     const ai: PipelineDeps['ai'] = async () => ({ provider: { id: 'claude-key', generateText: async () => 'not json' }, model: 'm' });
     await processSave(saveIds[0], makeDeps(db, { ai }).deps);
     expect(await getSave(db, saveIds[0])).toMatchObject({ statusReason: 'provider_error', nextRetryAt: NOW + 60e3, attempts: 1 });
+  });
+});
+
+describe('addShare (adding a link from inside the app)', () => {
+  it('goes through the same inbox as the share card, so ingest turns it into a save with its note', async () => {
+    const db = await freshDb();
+    await addShare(db, '  https://example.com/from-a-friend  ', 'from Priya', NOW);
+    const { saveIds } = await ingestInbox(db, NOW);
+    const save = await getSave(db, saveIds[0]);
+    expect(save).toMatchObject({ url: 'https://example.com/from-a-friend', note: 'from Priya', sourceApp: 'smaran', status: 'fetching' });
+  });
+
+  it('keeps no empty note', async () => {
+    const db = await freshDb();
+    await addShare(db, 'https://example.com/a', '   ', NOW);
+    expect(await db.getFirstAsync('SELECT note FROM share_inbox')).toEqual({ note: null });
   });
 });

@@ -1,5 +1,6 @@
 // Moves rows the native share activity wrote into `share_inbox` into the `saves` table.
 // First step of the data flow: share_inbox -> saves (status 'fetching') -> processSave.
+// Links added inside the app ("+" on the Timeline) enter through the same inbox via addShare.
 import { detectSource, extractFirstUrl, normalizeUrl } from '@/core/url';
 import type { Db } from '@/db/db';
 import { createOrBumpSave } from '@/db/saves';
@@ -12,6 +13,16 @@ interface InboxRow {
   received_at: number;
   undone: number;
   ingested: number;
+}
+
+// "Add a link" inside the app: written to the inbox exactly like a share from another app, so dedupe, notes and
+// Undo work the same way. The caller then runs the queue.
+export async function addShare(db: Db, sharedText: string, note: string, now: number): Promise<void> {
+  const trimmedNote = note.trim();
+  await db.runAsync(
+    "INSERT INTO share_inbox (shared_text, source_app, note, received_at) VALUES (?, 'smaran', ?, ?)",
+    sharedText.trim(), trimmedNote === '' ? null : trimmedNote, now,
+  );
 }
 
 // A shared link that is not a valid URL (e.g. "http://") is kept as a plain text save rather than lost.
