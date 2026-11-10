@@ -42,6 +42,9 @@ async function runOnce(deps: PipelineDeps, maxMs: number): Promise<{ processed: 
         // The lease expires on its own and the save is retried; one bad save must not stop the rest.
       }
     }
+    // A share, note or undo that arrived during this batch started a run that joined this one (see runQueue),
+    // so pick it up now instead of leaving it for the next run.
+    await ingestInbox(deps.db, deps.now());
   }
   return { processed };
 }

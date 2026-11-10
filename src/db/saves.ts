@@ -31,8 +31,9 @@ export const SELECT_SAVE = `SELECT s.*, t.name AS topic_name, t.color AS topic_c
 function mergeNote(existing: string | null, added: string | null): string | null {
   if (added === null || added.trim() === '') return null;
   if (existing === null || existing.trim() === '') return added;
-  // Re-ingesting the same row brings the same note again; it must not be appended twice.
-  if (existing.includes(added)) return null;
+  // Re-ingesting the same row brings the same note again; it must not be appended twice. Notes are joined by blank
+  // lines, so compare whole paragraphs: "ok" is new even when the existing note says "book it".
+  if (`\n\n${existing}\n\n`.includes(`\n\n${added}\n\n`)) return null;
   return `${existing}\n\n${added}`;
 }
 

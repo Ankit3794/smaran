@@ -66,6 +66,13 @@ describe('createOrBumpSave', () => {
     expect((await getSave(db, first.id))?.note).toBe('first thought\n\nsecond thought');
   });
 
+  it('appends a new note even when its words already appear inside the existing note', async () => {
+    const db = await freshDb();
+    const first = await createOrBumpSave(db, { ...webInput, note: 'book it' });
+    await createOrBumpSave(db, { ...webInput, inboxId: 2, note: 'ok', now: 500 });
+    expect((await getSave(db, first.id))?.note).toBe('book it\n\nok');
+  });
+
   it('keeps the existing note when a duplicate share has none', async () => {
     const db = await freshDb();
     const first = await createOrBumpSave(db, { ...webInput, note: 'mine' });

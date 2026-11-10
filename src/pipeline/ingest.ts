@@ -62,7 +62,9 @@ export async function ingestInbox(db: Db, now: number): Promise<{ saveIds: numbe
       note: row.note,
       now,
     });
-    await db.runAsync('UPDATE share_inbox SET ingested = 1 WHERE id = ?', row.id);
+    // Only if the note is still the one just copied: a note added meanwhile on the share card leaves the row
+    // not-ingested, so the next ingest copies it too.
+    await db.runAsync('UPDATE share_inbox SET ingested = 1 WHERE id = ? AND note IS ?', row.id, row.note);
     saveIds.push(id);
   }
   return { saveIds };

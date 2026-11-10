@@ -34,6 +34,11 @@ async function addInbox(db: Awaited<ReturnType<typeof freshDb>>, sharedText: str
   return result.lastInsertRowId;
 }
 
+// What the share card's "Add a note" does (ShareInboxDb.kt saveNote): note on the inbox row, row back to not-ingested.
+async function addNoteLikeShareCard(db: Awaited<ReturnType<typeof freshDb>>, inboxId: number, note: string) {
+  await db.runAsync('UPDATE share_inbox SET note = ?, ingested = 0 WHERE id = ?', note, inboxId);
+}
+
 function makeDeps(db: Awaited<ReturnType<typeof freshDb>>, overrides: Partial<PipelineDeps> = {}) {
   const prompts: string[] = [];
   const deps: PipelineDeps = {
@@ -81,10 +86,6 @@ describe('ingestInbox', () => {
   });
 
   // What the share card's "Add a note" does (saveNote in ShareInboxDb.kt): it never writes to saves itself.
-  async function addNoteLikeShareCard(db: Awaited<ReturnType<typeof freshDb>>, inboxId: number, note: string) {
-    await db.runAsync('UPDATE share_inbox SET note = ?, ingested = 0 WHERE id = ?', note, inboxId);
-  }
-
   it('copies a note added after ingestion onto the save and marks the row ingested again', async () => {
     const db = await freshDb();
     const inboxId = await addInbox(db, 'https://example.com/a');
@@ -115,6 +116,20 @@ describe('ingestInbox', () => {
     await db.runAsync('UPDATE share_inbox SET ingested = 0 WHERE id = ?', inboxId); // as if the app died before marking it
     await ingestInbox(db, NOW);
     expect(await db.getAllAsync('SELECT note FROM saves')).toEqual([{ note: 'once' }]);
+  });
+
+  it('leaves the row for the next ingest when a note arrives while the row is being ingested', async () => {
+    const db = await freshDb();
+    const inboxId = await addInbox(db, 'https://example.com/a');
+    // The share card can write a note between ingest reading the row and marking it ingested.
+    const racingDb = Object.create(db) as typeof db;
+    racingDb.runAsync = (async (sql: string, ...params: unknown[]) => {
+      if (sql.startsWith('UPDATE share_inbox SET ingested = 1')) await addNoteLikeShareCard(db, inboxId, 'typed just now');
+      return (db.runAsync as (...args: unknown[]) => unknown)(sql, ...params);
+    }) as typeof db.runAsync;
+    await ingestInbox(racingDb, NOW);
+    await ingestInbox(db, NOW + 1000);
+    expect(await db.getAllAsync('SELECT note FROM saves')).toEqual([{ note: 'typed just now' }]);
   });
 
   it('makes no save when the share was undone before ingestion', async () => {
@@ -282,6 +297,20 @@ describe('runQueue', () => {
     expect(result.processed).toBe(1);
     const row = await db.getFirstAsync<{ lease_until: number | null }>('SELECT lease_until FROM saves');
     expect(row?.lease_until).toBeNull();
+  });
+
+  it('copies a note added while the run is busy with that save, before the run ends', async () => {
+    const db = await freshDb();
+    const inboxId = await addInbox(db, 'https://example.com/a');
+    // The note is typed on the share card while the AI is still summarising the save.
+    const { deps } = makeDeps(db, {
+      ai: async () => ({
+        provider: { id: 'claude-key', generateText: async () => { await addNoteLikeShareCard(db, inboxId, 'mid-run note'); return GOOD_REPLY; } },
+        model: 'm',
+      }),
+    });
+    await runQueue(deps, { maxMs: 10_000 });
+    expect(await db.getAllAsync('SELECT note, status FROM saves')).toEqual([{ note: 'mid-run note', status: 'done' }]);
   });
 
   it('returns the same promise for concurrent calls', async () => {
