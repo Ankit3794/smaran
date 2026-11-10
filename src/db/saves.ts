@@ -153,8 +153,8 @@ export async function updateFetched(db: Db, id: number, fetched: Extracted & { t
   );
 }
 
-// Replaces a save's tag links. Must run inside a transaction when called with other writes.
-async function replaceTags(db: Db, saveId: number, tags: string[]): Promise<void> {
+// Replaces a save's tag links. Must run inside a transaction when called with other writes (also used by backup import).
+export async function replaceTags(db: Db, saveId: number, tags: string[]): Promise<void> {
   await db.runAsync('DELETE FROM save_tags WHERE save_id = ?', saveId);
   for (const name of new Set(tags.map((tag) => tag.trim().toLowerCase()).filter((tag) => tag !== ''))) {
     await db.runAsync('INSERT OR IGNORE INTO tags (name) VALUES (?)', name);
