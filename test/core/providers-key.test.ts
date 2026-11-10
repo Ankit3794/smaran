@@ -34,7 +34,10 @@ describe('anthropicMessages (key)', () => {
     expect(requests[0].url).toBe('https://api.anthropic.com/v1/messages');
     expect(requests[0].headers['x-api-key']).toBe('K');
     expect(requests[0].headers['anthropic-version']).toBe('2023-06-01');
-    expect(requests[0].body).toEqual({ model: 'm1', max_tokens: 50, system: 'sys', messages: [{ role: 'user', content: 'usr' }] });
+    // Claude 5.x models think by default and thinking counts against max_tokens; low effort keeps it short.
+    expect(requests[0].body).toEqual({
+      model: 'm1', max_tokens: 50, system: 'sys', messages: [{ role: 'user', content: 'usr' }], output_config: { effort: 'low' },
+    });
   });
 
   it('rejects empty text as bad_output', async () => {
@@ -137,5 +140,15 @@ describe('withTimeout', () => {
       new Promise((_resolve, reject) => init?.signal?.addEventListener('abort', () => reject(new Error('aborted'))));
     const provider = anthropicMessages(withTimeout(stalled, 20), { kind: 'key', key: 'K' });
     await expect(provider.generateText(request)).rejects.toMatchObject({ kind: 'network' });
+  });
+});
+
+describe('anthropicMessages when the reply budget runs out', () => {
+  it('says the reply was cut off instead of "no text"', async () => {
+    const { http } = recordingHttp(() => json({ content: [{ type: 'thinking', thinking: '' }], stop_reason: 'max_tokens' }));
+    await expect(anthropicMessages(http, { kind: 'key', key: 'K' }).generateText(request)).rejects.toMatchObject({
+      kind: 'bad_output',
+      message: 'Claude ran out of reply space before answering (max_tokens)',
+    });
   });
 });

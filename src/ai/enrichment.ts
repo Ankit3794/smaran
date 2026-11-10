@@ -98,6 +98,8 @@ export function parseEnrichment(raw: string): Enrichment {
 
 export async function enrich(provider: AiProvider, model: string, input: EnrichInput): Promise<Enrichment> {
   const { system, user } = buildEnrichmentPrompt(input);
-  const raw = await provider.generateText({ system, user, model, maxTokens: 400 });
+  // The answer is ~100 tokens, but current models think first and that counts against the limit; only tokens
+  // actually used are billed, so a generous limit (the owner chose 50k) costs nothing extra and avoids cut-off replies.
+  const raw = await provider.generateText({ system, user, model, maxTokens: 50_000 });
   return parseEnrichment(raw);
 }

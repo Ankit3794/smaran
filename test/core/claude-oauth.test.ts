@@ -134,6 +134,7 @@ describe('anthropicMessages (oauth)', () => {
     expect(provider.id).toBe('claude-sub');
     expect(await provider.generateText({ system: 'sys', user: 'usr', model: 'm1', maxTokens: 50 })).toBe('hi');
     expect(requests[0].url).toBe('https://api.anthropic.com/v1/messages');
+    expect(requests[0].body.output_config).toEqual({ effort: 'low' });
     expect(requests[0].headers).toMatchObject({
       authorization: 'Bearer T',
       'anthropic-version': '2023-06-01',

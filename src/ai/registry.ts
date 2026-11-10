@@ -87,6 +87,7 @@ export async function getActiveProvider(db: Db, http: Http): Promise<{ provider:
 
 // A one-word round trip proves the credential and model work before the user relies on them.
 export async function testConnection(provider: AiProvider, model: string): Promise<void> {
-  const reply = await provider.generateText({ system: 'Reply with the single word ok.', user: 'ok', model, maxTokens: 5 });
+  // 1024, not 5: models that think first spend tokens before writing "ok" (see enrichment.ts).
+  const reply = await provider.generateText({ system: 'Reply with the single word ok.', user: 'ok', model, maxTokens: 1024 });
   if (!reply.trim().toLowerCase().includes('ok')) throw new AiError('bad_output', 'The AI did not answer the test message');
 }

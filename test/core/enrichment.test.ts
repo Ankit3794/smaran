@@ -92,7 +92,7 @@ describe('buildEnrichmentPrompt', () => {
 });
 
 describe('enrich', () => {
-  test('calls the provider with maxTokens 400 and parses the reply', async () => {
+  test('calls the provider with maxTokens 50,000 and parses the reply', async () => {
     const calls: { maxTokens: number; model: string }[] = [];
     const provider: AiProvider = {
       id: 'claude-key',
@@ -102,7 +102,8 @@ describe('enrich', () => {
       },
     };
     expect(await enrich(provider, 'm1', baseInput())).toEqual(GOOD);
-    expect(calls).toEqual([expect.objectContaining({ maxTokens: 400, model: 'm1' })]);
+    // Room for the model's thinking as well as the short JSON answer (thinking counts against the limit).
+    expect(calls).toEqual([expect.objectContaining({ maxTokens: 50_000, model: 'm1' })]);
   });
 
   test('provider errors propagate unchanged', async () => {

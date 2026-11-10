@@ -61,6 +61,12 @@ describe('testConnection', () => {
     await expect(testConnection(replying(' OK. '), 'm')).resolves.toBeUndefined();
   });
 
+  it('leaves room for the model to think before answering', async () => {
+    const generateText = jest.fn(async () => 'ok');
+    await testConnection({ id: 'claude-key', generateText }, 'm');
+    expect(generateText).toHaveBeenCalledWith(expect.objectContaining({ maxTokens: 1024 }));
+  });
+
   it('fails with bad_output otherwise', async () => {
     await expect(testConnection(replying('hello'), 'm')).rejects.toMatchObject({ kind: 'bad_output' });
     await expect(testConnection(replying('hello'), 'm')).rejects.toBeInstanceOf(AiError);
