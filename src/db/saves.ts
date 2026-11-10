@@ -4,7 +4,7 @@ import type { Db } from './db';
 import type { Enrichment, Extracted, Save, SaveStatus, Source, StatusReason } from '@/core/types';
 import { resolveTopic } from './topics';
 
-interface SaveRow {
+export interface SaveRow {
   id: number; url: string | null; canonical_url: string | null; source: Source; source_app: string | null;
   shared_text: string | null; title: string | null; author: string | null; extracted_text: string | null;
   image_url: string | null; thumb_path: string | null; summary: string | null; brief: string | null;
@@ -16,7 +16,7 @@ interface SaveRow {
 // A `partial` save that already has a summary was enriched from whatever text existed: nothing left to do.
 const UNFINISHED = `(status IN ('fetching', 'waiting_ai') OR (status = 'partial' AND summary IS NULL))`;
 
-const SELECT_SAVE = `SELECT s.*, t.name AS topic_name, t.color AS topic_color
+export const SELECT_SAVE = `SELECT s.*, t.name AS topic_name, t.color AS topic_color
   FROM saves s LEFT JOIN topics t ON t.id = s.topic_id`;
 
 export async function createOrBumpSave(
@@ -52,7 +52,7 @@ export async function createOrBumpSave(
 }
 
 // Attaches tag names to rows with one extra query, so list screens do not query per row.
-async function toSaves(db: Db, rows: SaveRow[]): Promise<Save[]> {
+export async function toSaves(db: Db, rows: SaveRow[]): Promise<Save[]> {
   if (rows.length === 0) return [];
   const placeholders = rows.map(() => '?').join(', ');
   const tagRows = await db.getAllAsync<{ save_id: number; name: string }>(
