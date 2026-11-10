@@ -30,7 +30,9 @@
       "expo-sqlite",
       "expo-secure-store",
       "expo-web-browser",
-      "expo-font"
+      "expo-font",
+      "expo-background-task",
+      "./modules/share-receiver/plugin/withShareReceiver.js"
     ],
     "experiments": {
       "typedRoutes": true,

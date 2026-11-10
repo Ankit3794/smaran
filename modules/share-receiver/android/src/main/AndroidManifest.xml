@@ -1,0 +1,3 @@
+<!-- Intentionally empty: the activity, service and permission are added to the app manifest
+     by plugin/withShareReceiver.js so all of the app's manifest changes live in config plugins. -->
+<manifest />

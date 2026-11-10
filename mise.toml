@@ -1,0 +1,6 @@
+# Tool versions for this folder: Android's Gradle build needs JDK 17, and the Android SDK location.
+[tools]
+java = "temurin-17.0.21+9"
+
+[env]
+ANDROID_HOME = "{{env.HOME}}/Android/Sdk"

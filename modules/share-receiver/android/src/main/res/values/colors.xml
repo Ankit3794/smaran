@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Direction A colours for the native share card, copied from src/ui/theme.ts (native code cannot import JS).
+     Prefixed "share_" so they never clash with resources from the app or other libraries. -->
+<resources>
+  <color name="share_card">#FFFDF8</color>
+  <color name="share_ink">#221F1A</color>
+  <color name="share_muted">#8A8174</color>
+  <color name="share_line">#E7E0D3</color>
+  <color name="share_accent">#C8553D</color>
+  <color name="share_accent_ink">#FFFFFF</color>
+  <color name="share_pressed">#1F221F1A</color>
+</resources>

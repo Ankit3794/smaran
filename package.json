@@ -1,13 +1,14 @@
 {
   "name": "smaran",
   "version": "1.0.0",
-  "main": "expo-router/entry",
+  "main": "index.ts",
   "dependencies": {
     "@expo-google-fonts/fraunces": "^0.4.1",
     "@expo-google-fonts/inter": "^0.4.2",
     "@noble/hashes": "^2.4.0",
     "@shopify/flash-list": "2.3.2",
     "expo": "~58.0.23",
+    "expo-background-task": "~58.0.12",
     "expo-clipboard": "~58.0.4",
     "expo-constants": "~58.0.15",
     "expo-crypto": "~58.0.7",
@@ -22,6 +23,7 @@
     "expo-sqlite": "~58.0.15",
     "expo-status-bar": "~58.0.4",
     "expo-system-ui": "~58.0.7",
+    "expo-task-manager": "~58.0.13",
     "expo-web-browser": "~58.0.7",
     "htmlparser2": "^12.0.0",
     "react": "19.3.0",
@@ -46,7 +48,7 @@
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
+    "android": "expo run:android",
     "lint": "expo lint",
     "test": "jest",
     "typecheck": "tsc --noEmit && tsc --noEmit -p test && tsc --noEmit -p scripts"

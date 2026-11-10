@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Theme for ShareActivity. The window is translucent so the app the user shared from stays visible
+     behind the card, which makes the share feel like a toast rather than a jump into Smaran. -->
+<resources>
+  <style name="Theme.SmaranShare" parent="android:Theme.Material.Light.NoActionBar">
+    <item name="android:windowIsTranslucent">true</item>
+    <item name="android:windowBackground">@android:color/transparent</item>
+    <item name="android:windowNoTitle">true</item>
+    <item name="android:backgroundDimEnabled">false</item>
+    <item name="android:statusBarColor">@android:color/transparent</item>
+    <item name="android:navigationBarColor">@android:color/transparent</item>
+    <item name="android:colorAccent">@color/share_accent</item>
+    <item name="android:windowAnimationStyle">@style/Animation.SmaranShare</item>
+  </style>
+
+  <!-- A quick fade instead of the default slide, so the card appears and leaves gently. -->
+  <style name="Animation.SmaranShare" parent="android:Animation.Activity">
+    <item name="android:activityOpenEnterAnimation">@android:anim/fade_in</item>
+    <item name="android:activityCloseExitAnimation">@android:anim/fade_out</item>
+  </style>
+</resources>

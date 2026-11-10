@@ -1,7 +1,9 @@
 .superpowers/
 node_modules/
-android/
-ios/
+/android/
+/ios/
+# Gradle output of the local native modules (their sources are committed)
+modules/*/android/build/
 
 # Expo / tooling
 .expo/
