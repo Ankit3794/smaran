@@ -16,6 +16,26 @@ function base64url(bytes: Uint8Array): string {
   return result;
 }
 
+// The reverse of base64url, for reading JWT payloads; returns undefined for malformed input.
+export function decodeBase64url(text: string): Uint8Array | undefined {
+  const cleaned = text.replace(/=+$/, '');
+  if (cleaned.length % 4 === 1) return undefined;
+  const bytes: number[] = [];
+  let bits = 0;
+  let bitCount = 0;
+  for (const char of cleaned) {
+    const value = ALPHABET.indexOf(char);
+    if (value === -1) return undefined;
+    bits = (bits << 6) | value;
+    bitCount += 6;
+    if (bitCount >= 8) {
+      bitCount -= 8;
+      bytes.push((bits >> bitCount) & 255);
+    }
+  }
+  return new Uint8Array(bytes);
+}
+
 // The challenge is the SHA-256 of the verifier's text (not of the random bytes behind it).
 export function challengeFor(verifier: string): string {
   return base64url(sha256(new TextEncoder().encode(verifier)));
