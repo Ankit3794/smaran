@@ -3,14 +3,14 @@
 const aliasToSource = { '^@/(.*)$': '<rootDir>/src/$1' };
 
 // Packages Babel must still convert: jest-expo's own list (Expo and React Native ship untranspiled code)
-// plus htmlparser2 and its helpers and @noble/hashes (PKCE), which ship as ES modules that Jest can only run after conversion.
+// plus htmlparser2 and its helpers, @noble/hashes (PKCE) and FlashList, which ship as ES modules that Jest can only run after conversion.
 const esmPackages =
   '.pnpm|react-native|@react-native|@react-native-community|expo|@expo|@expo-google-fonts|react-navigation|@react-navigation|@sentry/react-native|native-base|standard-navigation|' +
-  '@noble/hashes|htmlparser2|domhandler|domutils|domelementtype|entities|dom-serializer';
+  '@shopify/flash-list|@noble/hashes|htmlparser2|domhandler|domutils|domelementtype|entities|dom-serializer';
 
 module.exports = {
   projects: [
     { displayName: 'core', preset: 'jest-expo/node', moduleNameMapper: aliasToSource, transformIgnorePatterns: [`/node_modules/(?!(${esmPackages}))`], testMatch: ['<rootDir>/test/core/**/*.test.ts'] },
-    { displayName: 'ui', preset: 'jest-expo/android', moduleNameMapper: aliasToSource, testMatch: ['<rootDir>/test/ui/**/*.test.{ts,tsx}'] },
+    { displayName: 'ui', preset: 'jest-expo/android', moduleNameMapper: aliasToSource, transformIgnorePatterns: [`/node_modules/(?!(${esmPackages}))`], testMatch: ['<rootDir>/test/ui/**/*.test.{ts,tsx}'] },
   ],
 };

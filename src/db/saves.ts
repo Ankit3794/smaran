@@ -221,3 +221,8 @@ export async function queueSummary(db: Db): Promise<{ waiting: number; reason: S
   );
   return { waiting: totals?.waiting ?? 0, reason: commonReason?.status_reason ?? null, nextRetryAt: totals?.next_retry_at ?? null };
 }
+
+// "Retry now": makes every unfinished save due immediately instead of waiting for its scheduled retry time.
+export async function retryNow(db: Db): Promise<void> {
+  await db.runAsync(`UPDATE saves SET next_retry_at = NULL WHERE ${UNFINISHED}`);
+}
