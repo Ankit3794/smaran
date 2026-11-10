@@ -33,7 +33,8 @@
     "start": "expo start",
     "android": "expo start --android",
     "lint": "expo lint",
-    "test": "jest"
+    "test": "jest",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test"
   },
   "private": true
 }
