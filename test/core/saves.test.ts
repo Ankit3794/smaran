@@ -92,6 +92,15 @@ describe('claimDue', () => {
     expect(await claimDue(db, 6000, 10, 10)).toEqual([waiting.id, partialBare.id]);
   });
 
+  it('hands each save to only one of two overlapping callers', async () => {
+    const db = await freshDb();
+    for (const inboxId of [1, 2, 3]) await createOrBumpSave(db, { ...webInput, inboxId, canonicalUrl: `u${inboxId}`, now: inboxId });
+    const [first, second] = await Promise.all([claimDue(db, 1000, 60_000, 10), claimDue(db, 1000, 60_000, 10)]);
+    const all = [...first, ...second];
+    expect(new Set(all).size).toBe(all.length);
+    expect(all.sort()).toEqual([1, 2, 3]);
+  });
+
   it('respects the limit and orders by last saved', async () => {
     const db = await freshDb();
     const older = await createOrBumpSave(db, { ...webInput, inboxId: 1, canonicalUrl: 'u1', now: 10 });

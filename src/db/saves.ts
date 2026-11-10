@@ -179,23 +179,22 @@ export async function setTags(db: Db, id: number, tags: string[]): Promise<void>
 }
 
 // Picks saves the pipeline should work on now and leases them, so two workers (or two app wake-ups) never take the same one.
+// One UPDATE ... RETURNING statement, because expo-sqlite transactions do not isolate the connection:
+// a separate SELECT then UPDATE could interleave with another caller and hand out the same save twice.
 export async function claimDue(db: Db, now: number, leaseMs: number, limit: number): Promise<number[]> {
-  let claimedIds: number[] = [];
-  await db.withTransactionAsync(async () => {
-    const rows = await db.getAllAsync<{ id: number }>(
-      `SELECT id FROM saves
+  const claimed = await db.getAllAsync<{ id: number; last_saved_at: number }>(
+    `UPDATE saves SET lease_until = ?
+     WHERE id IN (
+       SELECT id FROM saves
        WHERE ${UNFINISHED}
          AND (next_retry_at IS NULL OR next_retry_at <= ?)
          AND (lease_until IS NULL OR lease_until <= ?)
-       ORDER BY last_saved_at LIMIT ?`,
-      now, now, limit,
-    );
-    claimedIds = rows.map((row) => row.id);
-    for (const id of claimedIds) {
-      await db.runAsync('UPDATE saves SET lease_until = ? WHERE id = ?', now + leaseMs, id);
-    }
-  });
-  return claimedIds;
+       ORDER BY last_saved_at, id LIMIT ?)
+     RETURNING id, last_saved_at`,
+    now + leaseMs, now, now, limit,
+  );
+  // RETURNING does not promise row order, so restore the oldest-first order here.
+  return claimed.sort((a, b) => a.last_saved_at - b.last_saved_at || a.id - b.id).map((row) => row.id);
 }
 
 export async function queueSummary(db: Db): Promise<{ waiting: number; reason: StatusReason; nextRetryAt: number | null }> {
