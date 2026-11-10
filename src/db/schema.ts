@@ -1,9 +1,10 @@
 // Database schema. Migration 1 is the whole v1 data model (spec section 9).
 // Consumed by migrate.ts; SHARE_INBOX_DDL is also copied verbatim by the native share module.
 
+// AUTOINCREMENT: Undo deletes rows, and a reused id could collide with an older save's UNIQUE inbox_id.
 // A single statement, because the Kotlin share activity runs it before the app has ever opened the database.
 export const SHARE_INBOX_DDL = `CREATE TABLE IF NOT EXISTS share_inbox (
-  id INTEGER PRIMARY KEY,
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
   shared_text TEXT NOT NULL,
   source_app TEXT,
   note TEXT,

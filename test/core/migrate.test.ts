@@ -55,3 +55,14 @@ test('tags are indexed, and updates and deletes keep the index in sync', async (
   await db.runAsync('DELETE FROM saves WHERE id = ?', id);
   expect(await search('renamed')).toHaveLength(0);
 });
+
+test('share_inbox ids are never reused after a delete', async () => {
+  const db = openTestDb();
+  await migrate(db);
+  const insertInbox = () =>
+    db.runAsync(`INSERT INTO share_inbox (shared_text, received_at) VALUES ('x', 1)`);
+  const first = await insertInbox();
+  await db.runAsync('DELETE FROM share_inbox WHERE id = ?', first.lastInsertRowId);
+  const second = await insertInbox();
+  expect(second.lastInsertRowId).toBeGreaterThan(first.lastInsertRowId);
+});
