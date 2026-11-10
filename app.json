@@ -32,7 +32,8 @@
       "expo-web-browser",
       "expo-font",
       "expo-background-task",
-      "./modules/share-receiver/plugin/withShareReceiver.js"
+      "./modules/share-receiver/plugin/withShareReceiver.js",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,
