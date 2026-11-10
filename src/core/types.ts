@@ -1,6 +1,9 @@
 // Shared types used across the app's pure logic (src/core) and the screens.
 // Kept in one small file so every layer agrees on the same names.
 
+// The fetch function: callers pass the global `fetch`; tests pass a fake. Shared by the extract and ai layers.
+export type Http = typeof fetch;
+
 // Where a saved item came from; decides which fetcher runs and which icon shows.
 export type Source = 'x' | 'reddit' | 'github' | 'instagram' | 'web' | 'text';
 

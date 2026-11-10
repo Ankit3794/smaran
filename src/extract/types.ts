@@ -1,12 +1,9 @@
 // Shared shapes for the extractors: the fetch function they receive, the error they throw,
 // and the function signature each source (web, Reddit, GitHub) implements.
 // Sits between the share pipeline and the network: the pipeline calls an Extractor, gets Extracted back.
-import type { Extracted } from '@/core/types';
+import type { Extracted, Http } from '@/core/types';
 
-export type { Extracted };
-
-// Callers pass the global `fetch`; tests pass a fake that serves fixture files.
-export type Http = typeof fetch;
+export type { Extracted, Http };
 
 export interface ExtractCtx {
   http: Http;
