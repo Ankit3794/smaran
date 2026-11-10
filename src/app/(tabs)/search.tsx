@@ -8,8 +8,11 @@ import { ChoiceModal } from '@/ui/components/ChoiceModal';
 import { DayHeader } from '@/ui/components/DayHeader';
 import { SaveCard } from '@/ui/components/SaveCard';
 import { SaveSheet } from '@/ui/components/SaveSheet';
+import { SwipeToDelete } from '@/ui/components/SwipeToDelete';
+import { UndoBar } from '@/ui/components/UndoBar';
 import { useSearch } from '@/ui/hooks/useSearch';
 import { useTopics } from '@/ui/hooks/useTopics';
+import { useUndoableDelete } from '@/ui/hooks/useUndoableDelete';
 import { colors, fonts, radius } from '@/ui/theme';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -63,6 +66,7 @@ export default function SearchScreen() {
   const [topicChoice, setTopicChoice] = useState<{ label: string; topicId?: number }>({ label: 'All topics' });
   const [openSaveId, setOpenSaveId] = useState<number | null>(null);
   const { topics } = useTopics();
+  const { pendingIds, remove, undo } = useUndoableDelete();
   const { groups, searchedQuery } = useSearch(query, { since: time.since, source: sourceChoice.source, topicId: topicChoice.topicId });
 
   const hasQuery = query.trim() !== '';
@@ -99,9 +103,13 @@ export default function SearchScreen() {
         {groups.map((group) => (
           <View key={group.topicId ?? 'unsorted'}>
             <DayHeader title={group.topicName} sub={group.saves.length === 1 ? '1 result' : `${group.saves.length} results`} />
-            {group.saves.map((save) => (
-              <SaveCard key={save.id} save={save} query={searchedQuery} showTopic={false} onPress={() => setOpenSaveId(save.id)} />
-            ))}
+            {group.saves
+              .filter((save) => !pendingIds.includes(save.id))
+              .map((save) => (
+                <SwipeToDelete key={save.id} testID={`swipe-${save.id}`} onDelete={() => remove(save.id)}>
+                  <SaveCard save={save} query={searchedQuery} showTopic={false} onPress={() => setOpenSaveId(save.id)} />
+                </SwipeToDelete>
+              ))}
           </View>
         ))}
         {hasQuery && searchedQuery === query && groups.length === 0 && (
@@ -112,6 +120,7 @@ export default function SearchScreen() {
         </Text>
       </ScrollView>
 
+      <UndoBar count={pendingIds.length} onUndo={undo} />
       {openSaveId !== null && <SaveSheet saveId={openSaveId} onClose={() => setOpenSaveId(null)} />}
     </SafeAreaView>
   );

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Text, View } from 'react-native';
 import { Stack } from 'expo-router';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFonts } from 'expo-font';
 import { Fraunces_600SemiBold } from '@expo-google-fonts/fraunces';
 import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold } from '@expo-google-fonts/inter';
@@ -30,8 +31,11 @@ export default function RootLayout() {
   if (!fontsLoaded || db === null) return <View style={{ flex: 1, backgroundColor: colors.background }} />;
 
   return (
-    <DbContext.Provider value={db}>
-      <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }} />
-    </DbContext.Provider>
+    // Swipe gestures (swipe a card left to delete) need this root view around the whole app.
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <DbContext.Provider value={db}>
+        <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.background } }} />
+      </DbContext.Provider>
+    </GestureHandlerRootView>
   );
 }

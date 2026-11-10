@@ -10,9 +10,12 @@ import { DayHeader } from '@/ui/components/DayHeader';
 import { QueueBanner } from '@/ui/components/QueueBanner';
 import { SaveCard } from '@/ui/components/SaveCard';
 import { SaveSheet } from '@/ui/components/SaveSheet';
+import { SwipeToDelete } from '@/ui/components/SwipeToDelete';
 import { TopicChips } from '@/ui/components/TopicChips';
+import { UndoBar } from '@/ui/components/UndoBar';
 import { useQueue } from '@/ui/hooks/useQueue';
 import { useTimeline } from '@/ui/hooks/useTimeline';
+import { useUndoableDelete } from '@/ui/hooks/useUndoableDelete';
 import { colors, fonts } from '@/ui/theme';
 
 // FlashList wants one flat list, so day headings and cards are rows of the same list.
@@ -23,14 +26,16 @@ export default function TimelineScreen() {
   const [openSaveId, setOpenSaveId] = useState<number | null>(null);
   const { saves, topics, loadMore } = useTimeline({ topicId });
   const { queue, retry } = useQueue();
+  const { pendingIds, remove, undo } = useUndoableDelete();
 
   const rows = useMemo<Row[]>(
     () =>
-      groupByDay(saves, Date.now()).flatMap((group) => [
+      // Swiped-away saves disappear at once, while their Undo is still on offer.
+      groupByDay(saves.filter((save) => !pendingIds.includes(save.id)), Date.now()).flatMap((group) => [
         { kind: 'header' as const, key: `day-${group.key}`, title: group.title, sub: group.sub },
         ...group.saves.map((save) => ({ kind: 'save' as const, key: `save-${save.id}`, save })),
       ]),
-    [saves],
+    [saves, pendingIds],
   );
   // Sticky headers need to know which rows are headings.
   const headerIndices = rows.flatMap((row, index) => (row.kind === 'header' ? [index] : []));
@@ -50,7 +55,9 @@ export default function TimelineScreen() {
           item.kind === 'header' ? (
             <DayHeader title={item.title} sub={item.sub} />
           ) : (
-            <SaveCard save={item.save} onPress={() => setOpenSaveId(item.save.id)} />
+            <SwipeToDelete testID={`swipe-${item.save.id}`} onDelete={() => remove(item.save.id)}>
+              <SaveCard save={item.save} onPress={() => setOpenSaveId(item.save.id)} />
+            </SwipeToDelete>
           )
         }
         ListEmptyComponent={
@@ -61,6 +68,7 @@ export default function TimelineScreen() {
           </View>
         }
       />
+      <UndoBar count={pendingIds.length} onUndo={undo} />
       {openSaveId !== null && <SaveSheet saveId={openSaveId} onClose={() => setOpenSaveId(null)} />}
     </SafeAreaView>
   );
