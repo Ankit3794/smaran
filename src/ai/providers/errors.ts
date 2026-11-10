@@ -45,6 +45,8 @@ function latestResetAt(headers: Headers): number | undefined {
 
 export function mapHttpError(status: number, body: string, headers: Headers): AiError {
   const message = `HTTP ${status}: ${body.slice(0, 200)}`;
+  // A dead refresh token comes back as 400 or 401 with invalid_grant: the user must sign in again.
+  if ((status === 400 || status === 401) && body.includes('invalid_grant')) return new AiError('auth_expired', message);
   if (status === 401) return new AiError('auth_expired', message);
   // Claude subscriptions report an exhausted plan as a 400 rather than a 429.
   if (status === 400 && /extra usage/i.test(body)) return new AiError('quota_exceeded', message);

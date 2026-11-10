@@ -108,6 +108,24 @@ describe('claudeRefresh', () => {
   });
 });
 
+describe('token validation', () => {
+  it('rejects a reply without access_token as bad_output', async () => {
+    const { http } = recordingHttp([json({ refresh_token: 'R', expires_in: 60 })]);
+    await expect(claudeExchange(http, 'abc#the-state', pkce)).rejects.toMatchObject({ kind: 'bad_output' });
+  });
+
+  it('keeps the old refresh token when a refresh reply omits one', async () => {
+    const { http } = recordingHttp([json({ access_token: 'A2', expires_in: 60 })]);
+    const tokens = await claudeRefresh(http, 'old-refresh', 0);
+    expect(tokens).toMatchObject({ accessToken: 'A2', refreshToken: 'old-refresh', expiresAt: 60_000 });
+  });
+
+  it('maps invalid_grant on 400 or 401 to auth_expired', () => {
+    expect(mapHttpError(400, '{"error":"invalid_grant"}', new Headers()).kind).toBe('auth_expired');
+    expect(mapHttpError(401, 'invalid_grant', new Headers()).kind).toBe('auth_expired');
+  });
+});
+
 describe('anthropicMessages (oauth)', () => {
   it('sends the Claude Code headers and system blocks, without x-api-key', async () => {
     const { http, requests } = recordingHttp([json({ content: [{ type: 'text', text: 'hi' }] })]);

@@ -3,6 +3,7 @@
 import { AiError, type OAuthTokens } from '@/ai/types';
 import type { Http } from '@/core/types';
 import { mapHttpError } from '@/ai/providers/errors';
+import { parseTokenResponse } from '@/ai/auth/tokens';
 
 // Claude Code release current on 2026-11-10 (npm @anthropic-ai/claude-code). Sent in the user-agent so requests look like Claude Code.
 export const CLAUDE_CODE_VERSION = '2.1.322';
@@ -12,7 +13,6 @@ const REDIRECT_URI = 'https://console.anthropic.com/oauth/code/callback';
 const TOKEN_URLS = ['https://platform.claude.com/v1/oauth/token', 'https://console.anthropic.com/v1/oauth/token'];
 
 type Pkce = { verifier: string; challenge: string; state: string };
-type TokenResponse = { access_token: string; refresh_token: string; expires_in: number; account?: { uuid?: string } };
 
 export function claudeAuthUrl(pkce: Pkce): string {
   const params = new URLSearchParams({
@@ -29,7 +29,7 @@ export function claudeAuthUrl(pkce: Pkce): string {
 }
 
 // Tries each token URL in turn, moving on only when the URL does not exist (404): the endpoint has moved before.
-async function postTokenRequest(http: Http, body: unknown, now: number): Promise<OAuthTokens> {
+async function postTokenRequest(http: Http, body: unknown, now: number, previous?: { refreshToken: string }): Promise<OAuthTokens> {
   for (const url of TOKEN_URLS) {
     let response: Response;
     try {
@@ -44,18 +44,15 @@ async function postTokenRequest(http: Http, body: unknown, now: number): Promise
     if (response.status === 404 && url !== TOKEN_URLS[TOKEN_URLS.length - 1]) continue;
     const text = await response.text();
     if (!response.ok) throw mapHttpError(response.status, text, response.headers);
-    let data: TokenResponse;
+    let data: unknown;
     try {
       data = JSON.parse(text);
     } catch {
       throw new AiError('bad_output', 'Sign-in returned a non-JSON response');
     }
-    return {
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      expiresAt: now + data.expires_in * 1000,
-      accountId: data.account?.uuid,
-    };
+    const tokens = parseTokenResponse(data, now, previous);
+    const account = (data as { account?: { uuid?: unknown } }).account;
+    return { ...tokens, accountId: typeof account?.uuid === 'string' ? account.uuid : undefined };
   }
   throw new AiError('provider_error', 'No token endpoint answered');
 }
@@ -81,5 +78,10 @@ export async function claudeExchange(http: Http, pastedCode: string, pkce: Pkce,
 }
 
 export function claudeRefresh(http: Http, refreshToken: string, now = Date.now()): Promise<OAuthTokens> {
-  return postTokenRequest(http, { grant_type: 'refresh_token', refresh_token: refreshToken, client_id: CLIENT_ID }, now);
+  return postTokenRequest(
+    http,
+    { grant_type: 'refresh_token', refresh_token: refreshToken, client_id: CLIENT_ID },
+    now,
+    { refreshToken },
+  );
 }
