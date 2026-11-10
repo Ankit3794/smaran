@@ -181,7 +181,7 @@ export default function SettingsScreen() {
           <View style={{ flex: 1 }}>
             <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 14, color: colors.ink }}>Use public mirrors when a source blocks reading</Text>
             <Text style={{ fontFamily: fonts.body, fontSize: 11, color: colors.muted, marginTop: 1 }}>
-              For X and Reddit posts, ask a public read-only mirror for the text. Only the link is sent.
+              When X won't answer, ask the public read-only mirror fxtwitter for the post. Only the link is sent.
             </Text>
           </View>
           <Switch
