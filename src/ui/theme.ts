@@ -9,6 +9,8 @@ export const colors = {
   chip: '#EFE8DB',
   accent: '#C8553D',
   accentInk: '#FFFFFF',
+  // The accent at 22% over paper: marks matched words in search results.
+  highlight: 'rgba(200, 85, 61, 0.22)',
 };
 
 // Names match the font keys loaded in src/app/_layout.tsx.

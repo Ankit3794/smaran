@@ -1,13 +1,15 @@
-// One save in the Timeline: thumbnail, one-line summary, and a meta row (source, author, time, topic).
+// One save in a list (Timeline, topic detail, search results): thumbnail, one-line summary, and a meta row
+// (source, author, time, topic). With a search `query`, the matched words in the summary are marked.
 // Shows "Reading…" / "Waiting for AI" in place of the topic while the pipeline hasn't finished.
 import { Pressable, Text, View } from 'react-native';
 import { clockTime } from '@/core/dates';
 import type { Save } from '@/core/types';
 import { colors, fonts, radius } from '@/ui/theme';
+import { Highlight } from './Highlight';
 import { SourceBadge } from './SourceBadge';
 import { Thumb } from './Thumb';
 
-type Props = { save: Save; onPress: () => void; showTopic?: boolean };
+type Props = { save: Save; onPress: () => void; showTopic?: boolean; query?: string };
 
 // Best available description, from most to least refined.
 function headline(save: Save): string {
@@ -28,7 +30,7 @@ function StatusOrTopic({ save, showTopic }: { save: Save; showTopic: boolean }) 
   );
 }
 
-export function SaveCard({ save, onPress, showTopic = true }: Props) {
+export function SaveCard({ save, onPress, showTopic = true, query = '' }: Props) {
   return (
     <Pressable
       accessibilityRole="button"
@@ -37,9 +39,12 @@ export function SaveCard({ save, onPress, showTopic = true }: Props) {
     >
       <Thumb save={save} size={48} />
       <View style={{ flex: 1 }}>
-        <Text numberOfLines={2} style={{ fontFamily: fonts.bodyMedium, fontSize: 12.8, lineHeight: 17, color: colors.ink }}>
-          {headline(save)}
-        </Text>
+        <Highlight
+          text={headline(save)}
+          query={query}
+          numberOfLines={2}
+          style={{ fontFamily: fonts.bodyMedium, fontSize: 12.8, lineHeight: 17, color: colors.ink }}
+        />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 4 }}>
           <SourceBadge source={save.source} />
           {save.author !== null && (
