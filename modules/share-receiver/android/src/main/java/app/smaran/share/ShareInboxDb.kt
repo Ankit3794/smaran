@@ -21,8 +21,8 @@ private const val SHARE_INBOX_DDL = """CREATE TABLE IF NOT EXISTS share_inbox (
 )"""
 
 // Mirrors extractFirstUrl in src/core/url.ts, so "already saved" compares the exact string ingest stores in saves.url.
-// (?U) makes \S treat Unicode spaces as spaces, like JavaScript does.
-private val FIRST_URL = Regex("""(?U)https?://\S+""")
+// No (?U) flag: Android's ICU regex rejects it, and ICU's \S already treats Unicode spaces as spaces, like JavaScript.
+private val FIRST_URL = Regex("""https?://\S+""")
 private val TRAILING_PUNCTUATION = Regex("""[).,;:!?'"\]>]+$""")
 
 private fun extractFirstUrl(text: String): String? =
