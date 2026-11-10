@@ -46,6 +46,8 @@ export function detectSource(url: string | null): Source {
   if (host.endsWith('reddit.com')) return 'reddit';
   if (host === 'github.com') return 'github';
   if (host.endsWith('instagram.com')) return 'instagram';
+  // Threads moved from threads.net to threads.com; old links still work.
+  if (host === 'threads.com' || host === 'threads.net') return 'threads';
   return 'web';
 }
 

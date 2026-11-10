@@ -9,6 +9,7 @@ const BADGES: Record<Source, { background: string; label: string }> = {
   reddit: { background: '#FF4500', label: 'r/' },
   github: { background: '#24292F', label: 'GH' },
   instagram: { background: '#DD2A7B', label: '◎' },
+  threads: { background: '#000000', label: '@' },
   web: { background: '#6B7280', label: '↗' },
   text: { background: '#6B7280', label: '“' },
 };

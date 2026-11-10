@@ -4,6 +4,7 @@ import type { Source } from '@/core/types';
 import { githubExtractor } from './github';
 import { instagramExtractor } from './instagram';
 import { redditExtractor } from './reddit';
+import { threadsExtractor } from './threads';
 import type { Extractor } from './types';
 import { webExtractor } from './web';
 import { xExtractor } from './x';
@@ -18,6 +19,8 @@ export function extractorFor(source: Source): Extractor | null {
       return githubExtractor;
     case 'instagram':
       return instagramExtractor;
+    case 'threads':
+      return threadsExtractor;
     case 'web':
       return webExtractor;
     case 'text':

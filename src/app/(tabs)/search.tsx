@@ -34,6 +34,7 @@ const SOURCE_CHOICES: Array<{ label: string; source?: Source }> = [
   { label: 'Reddit', source: 'reddit' },
   { label: 'GitHub', source: 'github' },
   { label: 'Instagram', source: 'instagram' },
+  { label: 'Threads', source: 'threads' },
   { label: 'Web', source: 'web' },
   { label: 'Text', source: 'text' },
 ];
