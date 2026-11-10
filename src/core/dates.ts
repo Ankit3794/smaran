@@ -33,11 +33,19 @@ export function clockTime(timestamp: number): string {
   return `${hour}:${minute} ${date.getHours() < 12 ? 'AM' : 'PM'}`;
 }
 
+function lowercaseRelativeDay(timestamp: number, now: number): string {
+  const { title } = dayLabel(timestamp, now);
+  return title === 'Today' || title === 'Yesterday' ? title.toLowerCase() : title;
+}
+
 // "yesterday, 11:42 PM" / "Sunday, 6:00 PM" / "2 Nov, 6:00 PM": when a save was made, for the detail sheet.
 export function savedAtLabel(timestamp: number, now: number): string {
-  const { title } = dayLabel(timestamp, now);
-  const day = title === 'Today' || title === 'Yesterday' ? title.toLowerCase() : title;
-  return `${day}, ${clockTime(timestamp)}`;
+  return `${lowercaseRelativeDay(timestamp, now)}, ${clockTime(timestamp)}`;
+}
+
+// "yesterday at 11:42 PM": the same moment, worded for a sentence on the topic detail screen.
+export function lastSaveLabel(timestamp: number, now: number): string {
+  return `${lowercaseRelativeDay(timestamp, now)} at ${clockTime(timestamp)}`;
 }
 
 export interface DayGroup {

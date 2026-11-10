@@ -173,6 +173,14 @@ describe('timeline and deletion', () => {
     expect((await listTimeline(db, { limit: 1, before: 20 })).map((save) => save.id)).toEqual([a.id]);
   });
 
+  it('lists only saves without a topic when topicId is null', async () => {
+    const db = await freshDb();
+    const sorted = await createOrBumpSave(db, { ...webInput, inboxId: 1, canonicalUrl: 'u1', now: 10 });
+    const unsorted = await createOrBumpSave(db, { ...webInput, inboxId: 2, canonicalUrl: 'u2', now: 20 });
+    await applyEnrichment(db, sorted.id, { summary: 's', brief: 'b', topic: 'Trading', tags: [] }, 10);
+    expect((await listTimeline(db, { limit: 10, topicId: null })).map((save) => save.id)).toEqual([unsorted.id]);
+  });
+
   it('deletes a save and its tag links', async () => {
     const db = await freshDb();
     const { id } = await createOrBumpSave(db, webInput);

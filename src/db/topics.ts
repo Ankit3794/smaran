@@ -2,7 +2,8 @@
 // Merged topic names are kept as aliases so later AI suggestions still land in the right place.
 import type { Db } from './db';
 
-const TOPIC_PALETTE = ['#2F7D5B', '#B4443A', '#3C5FA8', '#B07A1F', '#7A4E9E', '#2B7A86', '#A0522D', '#5E6B2F', '#9C3D6E', '#4F5D75'];
+// Also the choices offered by "change colour" on the Topics screen.
+export const TOPIC_PALETTE = ['#2F7D5B', '#B4443A', '#3C5FA8', '#B07A1F', '#7A4E9E', '#2B7A86', '#A0522D', '#5E6B2F', '#9C3D6E', '#4F5D75'];
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export interface TopicSummary {
@@ -12,6 +13,7 @@ export interface TopicSummary {
   count: number;
   newThisWeek: number;
   last7: number[];
+  lastSavedAt: number | null;
 }
 
 // Returns the id of the topic called `name`: existing topic, then alias, else a new topic.
@@ -31,9 +33,10 @@ export async function resolveTopic(db: Db, name: string, now: number): Promise<n
 
 export async function listTopics(db: Db, now: number): Promise<TopicSummary[]> {
   const weekAgo = now - 7 * DAY_MS;
-  const rows = await db.getAllAsync<{ id: number; name: string; color: string; count: number; new_this_week: number }>(
+  const rows = await db.getAllAsync<{ id: number; name: string; color: string; count: number; new_this_week: number; last_saved_at: number | null }>(
     `SELECT t.id, t.name, t.color, COUNT(s.id) AS count,
-            COALESCE(SUM(s.created_at > ?), 0) AS new_this_week
+            COALESCE(SUM(s.created_at > ?), 0) AS new_this_week,
+            MAX(s.last_saved_at) AS last_saved_at
      FROM topics t LEFT JOIN saves s ON s.topic_id = t.id
      GROUP BY t.id ORDER BY count DESC, t.name`,
     weekAgo,
@@ -55,8 +58,16 @@ export async function listTopics(db: Db, now: number): Promise<TopicSummary[]> {
       const dayIndex = dayStarts.filter((start) => start <= save.created_at).length - 1;
       last7[dayIndex] += 1;
     }
-    return { id: row.id, name: row.name, color: row.color, count: row.count, newThisWeek: row.new_this_week, last7 };
+    return { id: row.id, name: row.name, color: row.color, count: row.count, newThisWeek: row.new_this_week, last7, lastSavedAt: row.last_saved_at };
   });
+}
+
+// Saves with no topic yet (the AI has not processed them); shown as "Unsorted" on the Topics screen.
+export async function unsortedSummary(db: Db): Promise<{ count: number; lastSavedAt: number | null }> {
+  const row = await db.getFirstAsync<{ count: number; last_saved_at: number | null }>(
+    'SELECT COUNT(*) AS count, MAX(last_saved_at) AS last_saved_at FROM saves WHERE topic_id IS NULL',
+  );
+  return { count: row?.count ?? 0, lastSavedAt: row?.last_saved_at ?? null };
 }
 
 export async function renameTopic(db: Db, id: number, name: string): Promise<void> {
@@ -80,17 +91,16 @@ export async function mergeTopics(db: Db, fromId: number, intoId: number): Promi
   });
 }
 
-// Most-used tag names within a topic, for the topic detail screen's filter chips.
-export async function topTags(db: Db, topicId: number, limit: number): Promise<string[]> {
-  const rows = await db.getAllAsync<{ name: string }>(
-    `SELECT t.name FROM tags t
+// Most-used tags within a topic, with how many saves use each, for the topic detail screen's filter chips.
+export async function topTags(db: Db, topicId: number, limit: number): Promise<Array<{ name: string; count: number }>> {
+  return db.getAllAsync<{ name: string; count: number }>(
+    `SELECT t.name, COUNT(*) AS count FROM tags t
      JOIN save_tags st ON st.tag_id = t.id
      JOIN saves s ON s.id = st.save_id
      WHERE s.topic_id = ?
      GROUP BY t.id ORDER BY COUNT(*) DESC, t.name LIMIT ?`,
     topicId, limit,
   );
-  return rows.map((row) => row.name);
 }
 
 // Most-used tag names across every topic, so the AI reuses existing tags instead of inventing near-duplicates.

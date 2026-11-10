@@ -119,10 +119,13 @@ export async function getSave(db: Db, id: number): Promise<Save | null> {
   return (await toSaves(db, rows))[0] ?? null;
 }
 
-export async function listTimeline(db: Db, filter: { topicId?: number; tag?: string; limit: number; before?: number }): Promise<Save[]> {
+export async function listTimeline(db: Db, filter: { topicId?: number | null; tag?: string; limit: number; before?: number }): Promise<Save[]> {
   const conditions: string[] = [];
   const params: (string | number)[] = [];
-  if (filter.topicId !== undefined) {
+  // null means "no topic yet" (the Unsorted list); undefined means no topic filter at all.
+  if (filter.topicId === null) {
+    conditions.push('s.topic_id IS NULL');
+  } else if (filter.topicId !== undefined) {
     conditions.push('s.topic_id = ?');
     params.push(filter.topicId);
   }
