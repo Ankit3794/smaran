@@ -33,6 +33,13 @@ export function clockTime(timestamp: number): string {
   return `${hour}:${minute} ${date.getHours() < 12 ? 'AM' : 'PM'}`;
 }
 
+// "yesterday, 11:42 PM" / "Sunday, 6:00 PM" / "2 Nov, 6:00 PM": when a save was made, for the detail sheet.
+export function savedAtLabel(timestamp: number, now: number): string {
+  const { title } = dayLabel(timestamp, now);
+  const day = title === 'Today' || title === 'Yesterday' ? title.toLowerCase() : title;
+  return `${day}, ${clockTime(timestamp)}`;
+}
+
 export interface DayGroup {
   key: string;
   title: string;

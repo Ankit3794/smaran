@@ -1,6 +1,6 @@
 // Tests for the timeline's day labels, day grouping and clock formatting (src/core/dates.ts).
 // Pure functions, so they run in Node with a fixed "now" instead of the real clock.
-import { clockTime, dayLabel, groupByDay } from '@/core/dates';
+import { clockTime, dayLabel, groupByDay, savedAtLabel } from '@/core/dates';
 import type { Save } from '@/core/types';
 
 const now = new Date(2026, 10, 10, 21, 0).getTime(); // Tue 10 Nov 2026, 9 PM local
@@ -39,5 +39,14 @@ describe('groupByDay', () => {
       ['Yesterday', [3]],
     ]);
     expect(groups[0].key).toBe('2026-11-10');
+  });
+});
+
+describe('savedAtLabel', () => {
+  it('reads like "yesterday, 11:42 PM"', () => {
+    const now = at(10, 10, 9, 0);
+    expect(savedAtLabel(at(10, 9, 23, 42), now)).toBe('yesterday, 11:42 PM');
+    expect(savedAtLabel(at(10, 10, 6, 0), now)).toBe('today, 6:00 AM');
+    expect(savedAtLabel(at(10, 4, 18, 0), now)).toBe('Wednesday, 6:00 PM');
   });
 });

@@ -1,6 +1,6 @@
 // The square preview on a save card: the downloaded image if there is one, otherwise a gradient tile
 // in the topic's colour with the first letters of the title, so even text-only saves are easy to tell apart.
-import { Image, Text, View } from 'react-native';
+import { Image, Text, type DimensionValue } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Save } from '@/core/types';
 import { colors, fonts } from '@/ui/theme';
@@ -11,8 +11,9 @@ function darken(hex: string, amount: number): string {
   return `rgb(${channels.join(',')})`;
 }
 
-export function Thumb({ save, size }: { save: Save; size: number }) {
-  const shape = { width: size, height: size, borderRadius: 10 };
+// `size` is the height; the width matches it (a square) unless `width` is given, as on the detail sheet's wide banner.
+export function Thumb({ save, size, width = size }: { save: Save; size: number; width?: DimensionValue }) {
+  const shape = { width, height: size, borderRadius: 10 };
   if (save.thumbPath !== null) {
     return <Image source={{ uri: save.thumbPath }} style={{ ...shape, backgroundColor: colors.chip }} />;
   }

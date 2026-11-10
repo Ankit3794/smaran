@@ -4,7 +4,7 @@ import { openTestDb } from '../helpers/sqlite';
 import { migrate } from '@/db/migrate';
 import {
   applyEnrichment, claimDue, createOrBumpSave, deleteSave, getSave, listTimeline,
-  queueSummary, setStatus, setTags, updateFetched,
+  queueSummary, retrySave, setStatus, setTags, updateFetched,
 } from '@/db/saves';
 
 async function freshDb() {
@@ -148,5 +148,18 @@ describe('timeline and deletion', () => {
     await deleteSave(db, id);
     expect(await getSave(db, id)).toBeNull();
     expect(await db.getAllAsync('SELECT * FROM save_tags')).toEqual([]);
+  });
+});
+
+describe('retrySave', () => {
+  it('makes one save due now and resets its attempts, leaving others alone', async () => {
+    const db = await freshDb();
+    const a = await createOrBumpSave(db, { ...webInput, inboxId: 1, canonicalUrl: 'u1' });
+    const b = await createOrBumpSave(db, { ...webInput, inboxId: 2, canonicalUrl: 'u2' });
+    await setStatus(db, a.id, 'waiting_ai', 'quota', null, 9_999, 3);
+    await setStatus(db, b.id, 'waiting_ai', 'quota', null, 9_999, 2);
+    await retrySave(db, a.id);
+    expect(await getSave(db, a.id)).toMatchObject({ nextRetryAt: null, attempts: 0 });
+    expect(await getSave(db, b.id)).toMatchObject({ nextRetryAt: 9_999, attempts: 2 });
   });
 });

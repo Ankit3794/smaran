@@ -226,3 +226,8 @@ export async function queueSummary(db: Db): Promise<{ waiting: number; reason: S
 export async function retryNow(db: Db): Promise<void> {
   await db.runAsync(`UPDATE saves SET next_retry_at = NULL WHERE ${UNFINISHED}`);
 }
+
+// "Retry AI" on one save's detail sheet: forgets the backoff so the next queue run picks this save up straight away.
+export async function retrySave(db: Db, id: number): Promise<void> {
+  await db.runAsync('UPDATE saves SET next_retry_at = NULL, attempts = 0 WHERE id = ?', id);
+}

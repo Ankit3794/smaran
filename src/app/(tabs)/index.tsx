@@ -1,5 +1,5 @@
 // The Timeline (home): saves grouped by day, topic filter chips, and the queue banner.
-// Data comes from useTimeline / useQueue; this file only lays it out.
+// Data comes from useTimeline / useQueue; tapping a card opens the SaveSheet. This file only lays it out.
 import { useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,6 +9,7 @@ import type { Save } from '@/core/types';
 import { DayHeader } from '@/ui/components/DayHeader';
 import { QueueBanner } from '@/ui/components/QueueBanner';
 import { SaveCard } from '@/ui/components/SaveCard';
+import { SaveSheet } from '@/ui/components/SaveSheet';
 import { TopicChips } from '@/ui/components/TopicChips';
 import { useQueue } from '@/ui/hooks/useQueue';
 import { useTimeline } from '@/ui/hooks/useTimeline';
@@ -19,6 +20,7 @@ type Row = { kind: 'header'; key: string; title: string; sub: string } | { kind:
 
 export default function TimelineScreen() {
   const [topicId, setTopicId] = useState<number | undefined>(undefined);
+  const [openSaveId, setOpenSaveId] = useState<number | null>(null);
   const { saves, topics, loadMore } = useTimeline({ topicId });
   const { queue, retry } = useQueue();
 
@@ -48,8 +50,7 @@ export default function TimelineScreen() {
           item.kind === 'header' ? (
             <DayHeader title={item.title} sub={item.sub} />
           ) : (
-            // The detail sheet is added in a later task; until then a card press does nothing.
-            <SaveCard save={item.save} onPress={() => {}} />
+            <SaveCard save={item.save} onPress={() => setOpenSaveId(item.save.id)} />
           )
         }
         ListEmptyComponent={
@@ -60,6 +61,7 @@ export default function TimelineScreen() {
           </View>
         }
       />
+      {openSaveId !== null && <SaveSheet saveId={openSaveId} onClose={() => setOpenSaveId(null)} />}
     </SafeAreaView>
   );
 }
