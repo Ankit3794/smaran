@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design Directions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#E8E6E1;font-family:Inter,system-ui,sans-serif;color:#1b1b1b}
+.wrap{max-width:1540px;margin:0 auto;padding:28px 28px 90px}
+h1{font-size:26px;margin:0 0 6px;letter-spacing:-.01em}
+.lead{color:#4a4a4a;max-width:980px;line-height:1.55;margin:0 0 6px;font-size:14.5px}
+.tabs{display:flex;gap:10px;position:sticky;top:0;background:#E8E6E1;padding:14px 0;z-index:20;flex-wrap:wrap}
+.tab{border:1px solid #bdbab3;background:#fff;padding:10px 18px;border-radius:999px;cursor:pointer;font-weight:600;font-size:14px}
+.tab.on{background:#1b1b1b;color:#fff;border-color:#1b1b1b}
+.dir{display:none}.dir.on{display:block}
+.intro{display:grid;grid-template-columns:1.4fr 1fr;gap:28px;background:#fff;border-radius:18px;padding:24px 26px;margin:8px 0 10px}
+.intro h2{margin:0 0 8px;font-size:24px}
+.intro p{margin:0 0 8px;line-height:1.55;color:#3d3d3d;font-size:14px}
+.intro ul{margin:6px 0 0;padding-left:18px;font-size:13.5px;line-height:1.6;color:#3d3d3d}
+.sw{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 22px}
+.sw span{width:46px;height:46px;border-radius:12px;border:1px solid rgba(0,0,0,.12);position:relative}
+.sw span i{position:absolute;top:50px;left:0;font-size:10px;font-style:normal;color:#666;white-space:nowrap}
+.kv{font-size:13px;color:#555;line-height:1.7}.kv b{color:#111}
+.group{font-size:12.5px;letter-spacing:.09em;text-transform:uppercase;color:#5b5b5b;margin:34px 0 14px;font-weight:700}
+.screens{display:flex;flex-wrap:wrap;gap:36px 26px}
+.shot{width:300px;margin:0}
+.shot figcaption{font-size:12.5px;color:#444;margin-top:12px;line-height:1.5}
+.shot figcaption b{display:block;font-size:13.5px;color:#111;margin-bottom:2px}
+.later{display:inline-block;background:#1b1b1b;color:#fff;font-size:10px;padding:2px 7px;border-radius:99px;margin-left:6px;vertical-align:2px;letter-spacing:.04em}
+.picks{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:10px}
+.pickc{background:#fff;border:2px solid transparent;border-radius:14px;padding:16px 18px;cursor:pointer}
+.pickc h3{margin:0 0 4px;font-size:16px}.pickc p{margin:0;font-size:13px;color:#555;line-height:1.45}
+.pickc.selected{border-color:#1b1b1b;box-shadow:0 0 0 3px rgba(0,0,0,.08)}
+.common{background:#fff;border-radius:18px;padding:18px 24px;margin:16px 0 4px;font-size:13.5px;line-height:1.6;color:#333}
+.common b{color:#111}
+
+/* ---------- phone shell ---------- */
+.phone{width:300px;height:640px;border-radius:42px;background:#0b0b0b;padding:8px;box-shadow:0 22px 44px rgba(0,0,0,.20),0 0 0 1px #2a2a2a inset}
+.scr{width:100%;height:100%;border-radius:34px;overflow:hidden;position:relative;display:flex;flex-direction:column;background:var(--bg);color:var(--ink);font-family:var(--bf);font-size:13px}
+.sb{height:30px;flex:none;display:flex;justify-content:space-between;align-items:center;padding:4px 24px 0;font-size:11.5px;font-weight:600;position:relative;z-index:3}
+.sb .cam{position:absolute;left:50%;top:9px;width:10px;height:10px;border-radius:50%;background:#000;transform:translateX(-50%)}
+.gest{height:18px;flex:none;display:flex;justify-content:center;align-items:center}
+.gest i{width:96px;height:4px;border-radius:4px;background:var(--ink);opacity:.35}
+.pad{padding:8px 16px}
+.row{display:flex;align-items:center;gap:8px}.between{justify-content:space-between}
+.grow{flex:1;min-width:0}
+.scroll{flex:1;overflow:hidden;position:relative}
+.muted{color:var(--muted)}
+.mono{font-family:var(--mf)}
+.ico{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;font-size:15px;color:var(--ink)}
+.clamp2{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.clamp1{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thumb{flex:none;display:grid;place-items:center;color:#fff;font-weight:700;font-family:'JetBrains Mono',monospace;position:relative;overflow:hidden}
+.thumb:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 6px,transparent 6px 12px)}
+.badge{display:inline-grid;place-items:center;width:15px;height:15px;border-radius:4px;font-size:8.5px;font-weight:700;color:#fff;flex:none;font-family:Inter,sans-serif}
+.b-x{background:#000;border:1px solid #333}.b-rd{background:#FF4500}.b-gh{background:#24292f}.b-web{background:#6b7280}
+.b-ig{background:linear-gradient(45deg,#f58529,#dd2a7b,#8134af)}
+.dot{width:7px;height:7px;border-radius:50%;flex:none;display:inline-block}
+.btn{background:var(--acc);color:var(--accInk);border-radius:var(--r);padding:12px 14px;text-align:center;font-weight:600;font-size:13.5px}
+.btn2{border:1px solid var(--line);color:var(--ink);border-radius:var(--r);padding:11px 14px;text-align:center;font-weight:600;font-size:13px;background:var(--card)}
+.field{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:11px 12px;font-size:13px}
+.hl{background:color-mix(in srgb,var(--acc) 22%,transparent);border-radius:3px;padding:0 1px}
+
+/* generic shared screens */
+.prov{display:flex;gap:12px;align-items:center;background:var(--card);border:1.5px solid var(--line);border-radius:var(--r);padding:12px;margin-bottom:10px}
+.prov.sel{border-color:var(--acc);box-shadow:0 0 0 3px color-mix(in srgb,var(--acc) 18%,transparent)}
+.plogo{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-weight:700;color:#fff;font-size:15px;flex:none}
+.radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--line);flex:none}
+.prov.sel .radio{border:5px solid var(--acc)}
+.step{display:flex;gap:10px;margin:0 0 14px;align-items:flex-start}
+.stepn{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;background:var(--chip);color:var(--ink);flex:none}
+.stepn.done{background:var(--acc);color:var(--accInk)}
+.xbg{background:#000;color:#e7e9ea;font-family:Inter,sans-serif}
+.xpost{padding:12px 16px;border-bottom:1px solid #2f3336}
+.xav{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,#2fbf7f,#0f3d2e);flex:none}
+.dim{position:absolute;inset:0;background:rgba(0,0,0,.55);z-index:4}
+.share{position:absolute;left:0;right:0;bottom:0;background:#f3f1f6;color:#1c1b1f;border-radius:26px 26px 0 0;z-index:5;padding:10px 16px 26px;font-family:Inter,sans-serif}
+.share .grab{width:36px;height:4px;border-radius:4px;background:#c9c5ce;margin:0 auto 12px}
+.apps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 6px;margin-top:12px}
+.app{display:flex;flex-direction:column;align-items:center;gap:6px;font-size:10.5px;text-align:center}
+.app i{width:46px;height:46px;border-radius:50%;background:#dcd7e2;display:block}
+.app.me i{border-radius:14px;display:grid;place-items:center;font-style:normal;font-weight:700;font-size:19px;box-shadow:0 0 0 3px #f3f1f6,0 0 0 5px var(--acc)}
+.toast{position:absolute;left:12px;right:12px;bottom:26px;z-index:6;background:var(--card);color:var(--ink);border-radius:calc(var(--r) + 4px);padding:12px 14px;box-shadow:0 12px 30px rgba(0,0,0,.35);border:1px solid var(--line)}
+.lock{background:linear-gradient(160deg,#2b3a55,#6b4c7a 55%,#c2876b);color:#fff;font-family:Inter,sans-serif}
+.notif{background:rgba(255,255,255,.88);color:#1b1b1b;border-radius:22px;padding:12px 14px;margin:0 12px 10px;backdrop-filter:blur(8px)}
+.setrow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+.sethd{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);font-weight:700;margin:16px 0 2px}
+.shimmer{background:linear-gradient(90deg,var(--chip) 0%,color-mix(in srgb,var(--chip) 40%,var(--card)) 50%,var(--chip) 100%);border-radius:5px;height:9px}
+.banner{border-radius:var(--r);padding:11px 12px;background:color-mix(in srgb,var(--acc) 12%,var(--card));border:1px solid color-mix(in srgb,var(--acc) 35%,transparent);font-size:12px;line-height:1.45}
+
+/* ---------- Direction A: Smaran (calm journal) ---------- */
+.A{--bg:#F6F2EA;--card:#FFFDF8;--ink:#221F1A;--muted:#8A8174;--line:#E7E0D3;--acc:#C8553D;--accInk:#fff;--chip:#EFE8DB;--hf:'Fraunces',Georgia,serif;--bf:'Inter',sans-serif;--mf:'Inter',sans-serif;--r:14px}
+.A .wm{font-family:var(--hf);font-size:24px;font-weight:600;letter-spacing:-.01em}
+.A .search{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:10px 14px;color:var(--muted);display:flex;gap:8px;align-items:center;margin-top:10px}
+.A .chips{display:flex;gap:7px;padding:10px 16px 8px;overflow:hidden;flex:none}
+.A .chip{padding:6px 11px;border-radius:999px;background:var(--chip);font-size:12px;font-weight:500;white-space:nowrap;display:flex;gap:5px;align-items:center}
+.A .chip.on{background:var(--ink);color:var(--bg)}
+.A .chip small{opacity:.6}
+.A .day{font-family:var(--hf);font-size:15px;font-weight:500;padding:12px 16px 6px;display:flex;gap:8px;align-items:baseline}
+.A .day small{font-family:var(--bf);font-size:11px;color:var(--muted)}
+.A .it{display:flex;gap:11px;padding:9px 12px;margin:0 10px 7px;background:var(--card);border-radius:var(--r);border:1px solid var(--line);align-items:center}
+.A .it .s{font-size:12.8px;line-height:1.35;font-weight:500}
+.A .it .m{font-size:11px;color:var(--muted);margin-top:4px;display:flex;gap:5px;align-items:center;white-space:nowrap}.A .it .m .clamp1{min-width:0;max-width:78px}
+.A .nav{flex:none;display:flex;justify-content:space-around;padding:8px 6px 4px;border-top:1px solid var(--line);background:var(--bg)}
+.A .nav div{display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;color:var(--muted);padding:4px 10px;border-radius:12px}
+.A .nav div b{font-size:16px;font-weight:400}
+.A .nav .on{color:var(--ink);font-weight:600}
+.A .nav .on b{background:var(--chip);border-radius:99px;padding:0 14px}
+.A .tl{position:relative;padding-left:30px}
+.A .tl:before{content:"";position:absolute;left:21px;top:0;bottom:0;width:1.5px;background:var(--line)}
+.A .tl .day:before{content:"";position:absolute;left:-14px;width:11px;height:11px;border-radius:50%;background:var(--bg);border:2px solid var(--acc);margin-top:3px}
+.A .tl .day{position:relative;padding-left:4px}
+.A .tl .it{margin-left:0}
+.A .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:26px 26px 0 0;z-index:5;padding:10px 16px 20px}
+.A .grab{width:36px;height:4px;border-radius:4px;background:var(--line);margin:0 auto 12px}
+.A .tag{display:inline-block;padding:4px 9px;border-radius:999px;border:1px solid var(--line);font-size:11px;margin:0 4px 5px 0;background:var(--card)}
+.A .topicrow{display:flex;gap:12px;align-items:center;padding:13px 14px;margin:0 12px 8px;background:var(--card);border:1px solid var(--line);border-radius:var(--r)}
+.A .bars{display:flex;gap:2px;align-items:flex-end;height:22px}
+.A .bars i{width:4px;border-radius:2px;display:block}
+
+/* ---------- Direction B: Trove (topic shelves, dark & bold) ---------- */
+.B{--bg:#0E0F13;--card:#181A21;--card2:#20232C;--ink:#F2F3F7;--muted:#8B90A0;--line:#272A36;--acc:#C6F432;--accInk:#0E0F13;--chip:#1F2230;--hf:'Space Grotesk',sans-serif;--bf:'Inter',sans-serif;--mf:'JetBrains Mono',monospace;--r:16px}
+.B .wm{font-family:var(--hf);font-size:22px;font-weight:700;letter-spacing:-.02em}
+.B .wm i{color:var(--acc);font-style:normal}
+.B .search{background:var(--card);border-radius:14px;padding:11px 14px;color:var(--muted);display:flex;gap:8px;align-items:center;margin-top:10px}
+.B .h{font-family:var(--hf);font-weight:600;font-size:14px;display:flex;justify-content:space-between;align-items:baseline;padding:14px 16px 8px}
+.B .h small{font-family:var(--bf);font-weight:500;font-size:11px;color:var(--muted)}
+.B .week{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;padding:0 16px}
+.B .wd{background:var(--card);border-radius:12px;padding:7px 0 6px;display:flex;flex-direction:column;align-items:center;gap:4px;font-size:10px;color:var(--muted)}
+.B .wd .bar{width:16px;border-radius:4px;background:var(--card2);height:30px;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.B .wd .bar i{display:block;width:100%}
+.B .wd b{color:var(--ink);font-size:11px}
+.B .wd.on{background:var(--acc);color:var(--accInk)}
+.B .wd.on b{color:var(--accInk)}
+.B .wd.on .bar{background:rgba(0,0,0,.15)}
+.B .tiles{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:0 16px}
+.B .tile{border-radius:18px;padding:12px;height:104px;position:relative;overflow:hidden}
+.B .tile .n{font-family:var(--hf);font-weight:700;font-size:15px}
+.B .tile .c{font-size:11px;opacity:.8;margin-top:2px}
+.B .tile .new{position:absolute;top:10px;right:10px;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px;background:rgba(0,0,0,.35)}
+.B .stack{position:absolute;bottom:10px;left:12px;display:flex}
+.B .stack .thumb{border:2px solid rgba(0,0,0,.35);margin-right:-8px}
+.B .car{display:flex;gap:9px;padding:0 16px;overflow:hidden}
+.B .cc{width:150px;flex:none;background:var(--card);border-radius:16px;overflow:hidden}
+.B .cc .s{font-size:12px;line-height:1.35;padding:8px 10px 2px;font-weight:500}
+.B .cc .m{font-size:10.5px;color:var(--muted);padding:2px 10px 10px;display:flex;gap:5px;align-items:center}
+.B .nav{flex:none;display:flex;justify-content:space-around;padding:10px 8px 4px;background:var(--bg);border-top:1px solid var(--line)}
+.B .nav div{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;color:var(--muted)}
+.B .nav div b{font-size:16px;font-weight:400}
+.B .nav .on{color:var(--acc);font-weight:600}
+.B .bc{background:var(--card);border-radius:18px;overflow:hidden;margin:0 14px 10px}
+.B .bc .s{font-size:13px;line-height:1.38;font-weight:600;padding:10px 12px 0;font-family:var(--hf)}
+.B .bc .m{font-size:11px;color:var(--muted);padding:6px 12px 11px;display:flex;gap:6px;align-items:center}
+.B .dh{font-family:var(--mf);font-size:10.5px;letter-spacing:.08em;color:var(--muted);padding:12px 16px 7px;text-transform:uppercase}
+.B .tag{display:inline-block;padding:5px 10px;border-radius:999px;background:var(--chip);font-size:11px;margin:0 5px 6px 0;color:var(--ink)}
+.B .tag.on{background:var(--ink);color:var(--bg)}
+.B .seg{display:flex;background:var(--card);border-radius:12px;padding:3px;margin:10px 16px 8px}
+.B .seg div{flex:1;text-align:center;padding:7px;border-radius:9px;font-size:12px;font-weight:600;color:var(--muted)}
+.B .seg .on{background:var(--card2);color:var(--ink)}
+.B .tlr{display:flex;gap:10px;padding:9px 12px;margin:0 14px 7px;background:var(--card);border-radius:14px;align-items:center;border-left:3px solid}
+.B .tlr .s{font-size:12.5px;line-height:1.35;font-weight:500}
+.B .tlr .m{font-size:10.5px;color:var(--muted);margin-top:4px;display:flex;gap:5px;align-items:center}
+
+/* ---------- Direction C: Glean (dense index, precise) ---------- */
+.C{--bg:#FAFAF8;--card:#FFFFFF;--ink:#121212;--muted:#76767A;--line:#E6E6E2;--acc:#4B2BF0;--accInk:#fff;--chip:#F0F0EC;--hf:'Inter',sans-serif;--bf:'Inter',sans-serif;--mf:'JetBrains Mono',monospace;--r:8px}
+.C .wm{font-family:var(--mf);font-size:17px;font-weight:600;letter-spacing:-.02em}
+.C .wm i{color:var(--acc);font-style:normal}
+.C .cmd{border:1px solid var(--line);background:var(--card);border-radius:8px;padding:9px 11px;color:var(--muted);display:flex;gap:8px;align-items:center;font-family:var(--mf);font-size:11.5px;margin-top:8px}
+.C .kbd{margin-left:auto;font-size:10px;border:1px solid var(--line);border-radius:4px;padding:1px 5px}
+.C .tok{display:flex;gap:6px;padding:8px 16px 0;flex-wrap:nowrap;overflow:hidden}
+.C .tk{font-family:var(--mf);font-size:10.5px;border:1px solid var(--line);border-radius:6px;padding:4px 7px;white-space:nowrap;background:var(--card)}
+.C .tk b{color:var(--acc);font-weight:600}
+.C .heat{padding:10px 16px 4px}
+.C .heat .g{display:grid;grid-template-columns:repeat(15,1fr);gap:3px}
+.C .heat .g i{aspect-ratio:1;border-radius:2px;display:block}
+.C .heat .lbl{display:flex;justify-content:space-between;font-family:var(--mf);font-size:9.5px;color:var(--muted);margin-top:4px}
+.C .tabs2{display:flex;gap:14px;padding:10px 16px 0;border-bottom:1px solid var(--line);overflow:hidden;flex:none}
+.C .tabs2 div{font-size:12px;padding-bottom:8px;white-space:nowrap;color:var(--muted);font-weight:500}
+.C .tabs2 div small{font-family:var(--mf);font-size:10px;margin-left:3px}
+.C .tabs2 .on{color:var(--ink);border-bottom:2px solid var(--ink);font-weight:600}
+.C .grp{display:grid;grid-template-columns:40px 1fr;border-bottom:1px solid var(--line)}
+.C .gut{font-family:var(--mf);font-size:10px;color:var(--muted);padding:10px 0 0 14px;line-height:1.3;text-transform:uppercase}
+.C .gut b{display:block;font-size:15px;color:var(--ink);font-weight:600}
+.C .r{display:flex;gap:9px;padding:9px 14px 9px 4px;border-bottom:1px solid var(--line);align-items:flex-start}
+.C .r:last-child{border-bottom:none}
+.C .r .s{font-size:12.3px;line-height:1.35;font-weight:500}
+.C .r .m{font-family:var(--mf);font-size:10px;color:var(--muted);margin-top:3px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.C .r .new{width:6px;height:6px;border-radius:50%;background:var(--acc);margin-top:6px;flex:none}
+.C .nav{flex:none;display:flex;justify-content:space-around;padding:9px 8px 4px;background:var(--bg);border-top:1px solid var(--line)}
+.C .nav div{font-size:11px;color:var(--muted);font-weight:500;display:flex;flex-direction:column;align-items:center;gap:2px}
+.C .nav div b{font-size:15px;font-weight:400}
+.C .nav .on{color:var(--ink);font-weight:700}
+.C .meta{display:grid;grid-template-columns:70px 1fr;gap:6px 8px;font-size:11.5px;margin:10px 0}
+.C .meta dt{font-family:var(--mf);font-size:10.5px;color:var(--muted)}
+.C .meta dd{margin:0}
+.C .tg{font-family:var(--mf);font-size:10.5px;color:var(--acc)}
+.C .tcl{display:flex;flex-wrap:wrap;gap:5px;padding:8px 16px}
+.C .tcl span{font-family:var(--mf);font-size:10.5px;border:1px solid var(--line);border-radius:5px;padding:3px 6px;background:var(--card)}
+.C .tcl span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.C .tcl small{color:var(--muted)}
+.C .tcl span.on small{color:#bbb}
+.C table{width:100%;border-collapse:collapse;font-size:12px}
+.C td{padding:11px 4px;border-bottom:1px solid var(--line);vertical-align:middle}
+.C .sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);border-radius:14px 14px 0 0;z-index:5;padding:10px 16px 18px;box-shadow:0 -10px 30px rgba(0,0,0,.12)}
+.C .grab{width:36px;height:4px;border-radius:4px;background:var(--line);margin:0 auto 10px}
+.C .pal{position:absolute;inset:0;background:rgba(250,250,248,.97);z-index:4;display:flex;flex-direction:column}
+.C .hint{font-family:var(--mf);font-size:10px;color:var(--muted);padding:6px 16px;display:flex;gap:10px;border-bottom:1px solid var(--line)}
+.C .hint b{color:var(--ink);font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Three design directions: every screen, same flow</h1>
+  <p class="lead">Each direction covers the full v1 flow: connect your AI, share from X, the save confirmation, the home screen, topics, a single topic's timeline, the detail view, search, waiting and failed states, and settings. There's also one <b>later</b> screen showing reminder notifications. The content is identical across all three so you can compare the look and feel directly. The names <b>Smaran</b>, <b>Trove</b> and <b>Glean</b> are placeholders for now; we'll pick the real name separately.</p>
+  <div class="common"><b>The same in all three:</b> Share → the save is stored instantly (works offline) → the AI fills in a one-line summary, topic and tags in the background → you browse by <b>topic + time</b> or search by keyword → each card shows a thumbnail, a one-line summary and the source → tapping opens the original. A small dot marks saves you've never opened; later, reminders will use this.</div>
+
+  <div class="tabs">
+    <div class="tab on" data-t="A">A · Smaran: calm journal</div>
+    <div class="tab" data-t="B">B · Trove: topic shelves</div>
+    <div class="tab" data-t="C">C · Glean: dense index</div>
+  </div>
+
+  <section class="dir on" id="dirA"></section>
+  <section class="dir" id="dirB"></section>
+  <section class="dir" id="dirC"></section>
+
+  <div class="group">Which direction should we build on?</div>
+  <div class="picks">
+    <div class="pickc" data-choice="A" onclick="toggleSelect(this)"><h3>A · Smaran</h3><p>Calm, warm, journal-style timeline. Time first, then topics as filters.</p></div>
+    <div class="pickc" data-choice="B" onclick="toggleSelect(this)"><h3>B · Trove</h3><p>Dark and bold. Topic tiles and a week strip on home, big visual cards.</p></div>
+    <div class="pickc" data-choice="C" onclick="toggleSelect(this)"><h3>C · Glean</h3><p>Dense and precise. Activity heatmap, compact rows, command-style search.</p></div>
+    <div class="pickc" data-choice="mix" onclick="toggleSelect(this)"><h3>Mix</h3><p>Parts from several. Tell me which screens you liked in the terminal.</p></div>
+  </div>
+</div>
+
+<script>
+const ITEMS=[
+ {id:6,src:'x',who:'@devtoolsdaily',title:'Local-first notes app on SQLite + CRDTs that works fully offline',topic:'Tools',tags:['local-first','sqlite','notes'],day:'t',time:'2:15 PM',t24:'14:15',g:['#132a4a','#6fa8ff'],gl:'⌘',unread:true},
+ {id:9,src:'x',who:'@sec_lena',title:'How the latest npm supply-chain worm spreads through CI tokens',topic:'Security',tags:['supply-chain','npm','ci'],day:'t',time:'8:40 AM',t24:'08:40',g:['#2a0f1a','#ff7a9a'],gl:'npm',unread:false},
+ {id:1,src:'x',who:'@quantdesk',title:'Free open-source options-flow scanner for NSE with live OI alerts',topic:'Trading',tags:['options','scanner','open-source'],day:'y',time:'11:42 PM',t24:'23:42',g:['#0f3d2e','#2fbf7f'],gl:'OI↑',unread:true,
+  brief:'A thread introducing a free scanner that flags unusual open-interest changes in NSE options and sends live alerts. Links to the GitHub repo and a 2-minute demo.'},
+ {id:2,src:'gh',who:'freqtrade/freqtrade',title:'Crypto trading bot in Python with backtesting and strategy tuning',topic:'Trading',tags:['crypto','bot','python'],day:'y',time:'6:10 PM',t24:'18:10',g:['#1c2333','#5b8cff'],gl:'{ }',unread:false},
+ {id:3,src:'rd',who:'r/netsec',title:'Write-up: pre-auth RCE chain in a popular VPN appliance — patch now',topic:'Security',tags:['rce','vpn','advisory'],day:'y',time:'9:05 AM',t24:'09:05',g:['#3a1214','#ff5d5d'],gl:'RCE',unread:true},
+ {id:4,src:'ig',who:'@swingwithsara',title:'3 risk-management rules most swing traders ignore',topic:'Trading',tags:['risk','swing'],day:'s',time:'10:30 PM',t24:'22:30',g:['#3b1d4a','#f58529'],gl:'▶',unread:true},
+ {id:5,src:'web',who:'policyreview.blog',title:'How coalition math is reshaping the next round of state elections',topic:'Politics',tags:['elections','analysis'],day:'s',time:'8:15 PM',t24:'20:15',g:['#3a2a0c','#ffb547'],gl:'¶',unread:false},
+ {id:7,src:'gh',who:'ollama/ollama',title:'Run open LLMs on your own machine with one command',topic:'Tools',tags:['llm','local'],day:'w',time:'Nov 3',t24:'03 Nov',g:['#1a1a1a','#9a9a9a'],gl:'◉',unread:false},
+ {id:8,src:'rd',who:'r/algotrading',title:'What I learned running a mean-reversion bot for 12 months',topic:'Trading',tags:['algo','backtest'],day:'w',time:'Nov 2',t24:'02 Nov',g:['#10302a','#3ddc97'],gl:'μ',unread:true},
+];
+const byId=id=>ITEMS.find(i=>i.id===id);
+const DAYS={t:['Today','Tue 10 Nov'],y:['Yesterday','Mon 9 Nov'],s:['Sunday','8 Nov'],w:['Last week','2–3 Nov']};
+const TOPICS=[['Trading',24,3],['Tools',18,2],['Security',11,2],['Politics',6,1]];
+const TC={A:{Trading:'#2F7D5B',Security:'#B4443A',Tools:'#3C5FA8',Politics:'#B07A1F'},
+          B:{Trading:'#3DDC97',Security:'#FF5D5D',Tools:'#5B8CFF',Politics:'#FFB547'},
+          C:{Trading:'#0E9F6E',Security:'#E02D3C',Tools:'#4B2BF0',Politics:'#C27803'}};
+const SRC={x:['b-x','𝕏','X'],rd:['b-rd','r/','Reddit'],gh:['b-gh','GH','GitHub'],web:['b-web','↗','Web'],ig:['b-ig','◎','Instagram']};
+const badge=s=>`<span class="badge ${SRC[s][0]}">${SRC[s][1]}</span>`;
+const thumb=(it,w,h,r,fs)=>`<div class="thumb" style="width:${typeof w==='string'?w:w+'px'};height:${h}px;border-radius:${r}px;background:linear-gradient(135deg,${it.g[0]},${it.g[1]});font-size:${fs||13}px">${it.gl}</div>`;
+const sb=(dark)=>`<div class="sb" style="${dark?'color:#fff':''}"><span>9:41</span><span class="cam"></span><span>▴▴ ◔ 82%</span></div>`;
+const gest=(c)=>`<div class="gest"><i style="${c?'background:'+c:''}"></i></div>`;
+const phone=(dir,inner,cap,later,extraCls)=>`<figure class="shot"><div class="phone"><div class="scr ${extraCls||''}">${inner}</div></div><figcaption><b>${cap[0]}${later?'<span class="later">LATER</span>':''}</b>${cap[1]}</figcaption></figure>`;
+
+/* ========== Shared, themed screens ========== */
+function connect(D,name){
+ return sb()+`<div class="pad" style="padding-top:14px">
+  <div class="muted" style="font-size:11px;font-weight:600;letter-spacing:.06em">STEP 2 OF 3</div>
+  <div style="font-family:var(--hf);font-size:22px;font-weight:600;line-height:1.2;margin:6px 0 8px">Pick the AI that reads your saves</div>
+  <div class="muted" style="font-size:12.5px;line-height:1.5;margin-bottom:16px">For each save it writes a one-line summary, a topic and tags. Your library stays on this phone, and only the post text goes to the AI you pick.</div>
+  <div class="prov sel"><div class="plogo" style="background:#D97757">✳</div><div class="grow"><b>Claude</b><div class="muted" style="font-size:11.5px">Sign in with Pro / Max</div></div><div class="radio"></div></div>
+  <div class="prov"><div class="plogo" style="background:#10a37f">◎</div><div class="grow"><b>ChatGPT</b><div class="muted" style="font-size:11.5px">Sign in with Plus / Pro</div></div><div class="radio"></div></div>
+  <div class="prov"><div class="plogo" style="background:linear-gradient(135deg,#4285f4,#9b72cb,#d96570)">✦</div><div class="grow"><b>Gemini</b><div class="muted" style="font-size:11.5px">Sign in with Google · free tier</div></div><div class="radio"></div></div>
+  <div style="text-align:center;font-size:12px;margin:14px 0 0;color:var(--acc);font-weight:600">I have an API key instead</div>
+ </div><div style="flex:1"></div>
+ <div class="pad" style="padding-bottom:6px"><div class="btn">Continue with Claude</div></div>`+gest();
+}
+function paste(D){
+ return sb()+`<div class="pad" style="padding-top:10px"><div class="ico" style="margin-left:-8px">←</div>
+  <div style="font-family:var(--hf);font-size:22px;font-weight:600;line-height:1.2;margin:6px 0 16px">Connect Claude</div>
+  <div class="step"><div class="stepn done">✓</div><div><b>Sign in on claude.ai</b><div class="muted" style="font-size:11.5px;margin-top:2px">Opened in your browser and approved</div></div></div>
+  <div class="step"><div class="stepn done">✓</div><div><b>Copy the code Claude shows you</b><div class="muted" style="font-size:11.5px;margin-top:2px">We spotted it on your clipboard</div></div></div>
+  <div class="step"><div class="stepn">3</div><div class="grow"><b>Paste it here</b>
+   <div class="field mono" style="margin-top:8px;font-size:12px;border-color:var(--acc)">a8Fk2Q…Wm91#x7Tq</div></div></div>
+  <div class="banner" style="margin-top:6px">Your sign-in stays encrypted on this phone. We never see it, because there's no server.</div>
+ </div><div style="flex:1"></div>
+ <div class="pad" style="padding-bottom:6px"><div class="btn">Connect</div><div style="text-align:center;font-size:11.5px;margin-top:10px" class="muted">Open claude.ai again</div></div>`+gest();
+}
+function xscreen(){
+ return `<div class="xbg" style="flex:1;display:flex;flex-direction:column">
+  <div style="padding:6px 16px 10px;font-weight:700;font-size:15px;border-bottom:1px solid #2f3336">← Post</div>
+  <div class="xpost"><div class="row" style="align-items:flex-start;gap:10px"><div class="xav"></div><div class="grow">
+   <div style="font-size:13px"><b>Quant Desk</b> <span style="color:#71767b">@quantdesk · 2h</span></div>
+   <div style="font-size:13.5px;line-height:1.45;margin-top:4px">I built a free options-flow scanner for NSE 🧵<br><br>It watches open-interest changes across strikes and pings you when something unusual happens. Fully open source, link below 👇</div>
+   <div style="margin-top:10px;height:120px;border-radius:14px;background:linear-gradient(135deg,#0f3d2e,#2fbf7f);border:1px solid #2f3336"></div>
+   <div style="display:flex;justify-content:space-between;color:#71767b;font-size:12px;margin-top:10px;padding-right:20px"><span>💬 48</span><span>⟲ 312</span><span>♡ 2.1k</span><span style="color:#1d9bf0">⤴</span></div>
+  </div></div></div></div>`;
+}
+function shareSheet(D,name,letter){
+ return `<div class="xbg" style="position:absolute;inset:0;display:flex;flex-direction:column">${sb(true)}${xscreen()}</div><div class="dim"></div>
+ <div class="share"><div class="grab"></div>
+  <div class="row" style="gap:10px;background:#fff;border-radius:14px;padding:9px 10px"><div style="width:38px;height:38px;border-radius:9px;background:linear-gradient(135deg,#0f3d2e,#2fbf7f);flex:none"></div><div class="grow"><div style="font-size:12px;font-weight:600" class="clamp1">I built a free options-flow scanner for NSE…</div><div style="font-size:11px;color:#6b6770">x.com/quantdesk/status/18…</div></div><div style="font-size:11px;color:#6b6770">Copy</div></div>
+  <div class="apps">
+   <div class="app me"><i style="background:var(--acc);color:var(--accInk);font-family:var(--hf)">${letter}</i><b style="font-weight:600">${name}</b></div>
+   <div class="app"><i style="background:#c8e6c9"></i>Messages</div>
+   <div class="app"><i style="background:#ffd6d1"></i>Mail</div>
+   <div class="app"><i style="background:#d6e4ff"></i>Drive</div>
+   <div class="app"><i style="background:#fff0c2"></i>Notes</div>
+   <div class="app"><i></i>Nearby</div>
+   <div class="app"><i></i>Bluetooth</div>
+   <div class="app"><i></i>More</div>
+  </div></div>`;
+}
+function savedToast(D,name,letter){
+ return `<div class="xbg" style="position:absolute;inset:0;display:flex;flex-direction:column">${sb(true)}${xscreen()}</div>
+ <div class="toast"><div class="row" style="gap:11px"><div style="width:34px;height:34px;border-radius:10px;background:var(--acc);color:var(--accInk);display:grid;place-items:center;font-weight:700;font-family:var(--hf);flex:none">${letter}</div>
+  <div class="grow"><div style="font-weight:600;font-size:13px">Saved to ${name}</div><div class="muted" style="font-size:11.5px;margin-top:1px">Sorting it into a topic in the background…</div></div></div>
+  <div class="row" style="margin-top:10px;gap:8px"><div class="btn2 grow" style="padding:8px">Add a note</div><div class="btn2 grow" style="padding:8px">Undo</div></div></div>`;
+}
+function settings(D,name){
+ return sb()+`<div class="pad" style="padding-top:10px"><div style="font-family:var(--hf);font-size:22px;font-weight:600">Settings</div>
+  <div class="sethd">AI</div>
+  <div class="setrow"><div class="plogo" style="background:#D97757;width:30px;height:30px;font-size:13px">✳</div><div class="grow"><b>Claude</b><div class="muted" style="font-size:11px">Pro subscription · connected</div></div><span style="color:#2f9e5b;font-size:11px;font-weight:700">● OK</span></div>
+  <div class="setrow"><div class="grow">Model</div><span class="muted">Haiku · fast</span><span class="muted">›</span></div>
+  <div class="setrow"><div class="grow">Switch provider or use API key</div><span class="muted">›</span></div>
+  <div class="sethd">Library</div>
+  <div class="setrow"><div class="grow">Saves on this phone</div><span class="muted mono">142 · 3.1 MB</span></div>
+  <div class="setrow"><div class="grow">Rename & merge topics</div><span class="muted">›</span></div>
+  <div class="setrow"><div class="grow">Export backup (.zip)</div><span class="muted">›</span></div>
+  <div class="setrow"><div class="grow">Import backup</div><span class="muted">›</span></div>
+  <div class="sethd">Coming later</div>
+  <div class="setrow" style="opacity:.5"><div class="grow">Reminders for unopened saves</div><span class="muted">soon</span></div>
+  <div class="setrow" style="opacity:.5;border:none"><div class="grow">On-device AI (no internet)</div><span class="muted">soon</span></div>
+ </div><div style="flex:1"></div>`+gest();
+}
+function lock(D,name,letter){
+ return `<div class="lock" style="position:absolute;inset:0;display:flex;flex-direction:column">${sb(true)}
+  <div style="text-align:center;margin-top:30px;font-size:13px;opacity:.85">Tuesday, 10 November</div>
+  <div style="text-align:center;font-size:64px;font-weight:300;letter-spacing:-.02em;line-height:1.1">21:05</div>
+  <div style="flex:1"></div>
+  <div class="notif"><div class="row" style="font-size:11px;color:#555;gap:6px"><span style="width:16px;height:16px;border-radius:5px;background:var(--acc);color:var(--accInk);display:grid;place-items:center;font-size:9px;font-weight:700">${letter}</span>${name} · now</div>
+   <div style="font-weight:700;font-size:13px;margin-top:6px">Remember this one?</div>
+   <div style="font-size:12.5px;line-height:1.45;margin-top:2px">2 weeks ago you saved an <b>options-flow scanner</b> from @quantdesk and never opened it. It's 1 of 4 trading finds waiting for you.</div>
+   <div class="row" style="gap:8px;margin-top:10px"><div style="flex:1;text-align:center;background:#eceaf0;border-radius:99px;padding:7px;font-size:12px;font-weight:600">Show me</div><div style="flex:1;text-align:center;background:#eceaf0;border-radius:99px;padding:7px;font-size:12px;font-weight:600">Later</div></div></div>
+  <div class="notif" style="opacity:.92"><div class="row" style="font-size:11px;color:#555;gap:6px"><span style="width:16px;height:16px;border-radius:5px;background:var(--acc);color:var(--accInk);display:grid;place-items:center;font-size:9px;font-weight:700">${letter}</span>${name} · Sunday</div>
+   <div style="font-weight:700;font-size:13px;margin-top:6px">Your week in saves</div>
+   <div style="font-size:12.5px;line-height:1.45;margin-top:2px">9 saves · Trading 4 · Security 3 · Tools 2. You haven't opened 5 of them.</div></div>
+  <div style="height:40px"></div>${gest('#fff')}</div>`;
+}
+
+/* ========== Direction A: Smaran ========== */
+function A_item(it,opts={}){
+ const c=TC.A[it.topic];
+ return `<div class="it">${thumb(it,48,48,10,12)}<div class="grow"><div class="s clamp2">${it.title}</div>
+ <div class="m">${badge(it.src)}<span class="clamp1">${it.who}</span>·<span>${it.time}</span>${opts.topic===false?'':`<span class="dot" style="background:${c};margin-left:4px"></span><span style="color:${c};font-weight:600">${it.topic}</span>`}</div></div>
+ ${it.unread?'<span class="dot" style="background:var(--acc)"></span>':''}</div>`;
+}
+function A_nav(on){return `<div class="nav">${[['◷','Timeline'],['◫','Topics'],['⌕','Search'],['⚙','Settings']].map(([i,l])=>`<div class="${l===on?'on':''}"><b>${i}</b>${l}</div>`).join('')}</div>`+gest();}
+function A_day(k,ids,opts){return `<div class="day">${DAYS[k][0]}<small>${DAYS[k][1]}</small></div>`+ids.map(i=>A_item(byId(i),opts)).join('');}
+function A_home(){
+ return sb()+`<div class="pad" style="padding-bottom:0"><div class="row between"><div class="wm">Smaran</div><div class="row" style="gap:2px"><span class="muted" style="font-size:11px">142 saves</span></div></div>
+  <div class="search">⌕ <span>Search your saves</span></div></div>
+  <div class="chips"><div class="chip on">All</div>${TOPICS.map(t=>`<div class="chip"><span class="dot" style="background:${TC.A[t[0]]}"></span>${t[0]} <small>${t[1]}</small></div>`).join('')}</div>
+  <div class="scroll">${A_day('t',[6,9])}${A_day('y',[1,2,3])}${A_day('s',[4])}</div>`+A_nav('Timeline');
+}
+function A_topics(){
+ const bars={Trading:[2,0,1,3,0,2,1],Tools:[1,1,0,0,2,0,1],Security:[0,2,0,1,0,1,1],Politics:[0,0,1,0,0,1,0]};
+ return sb()+`<div class="pad"><div class="wm" style="font-size:22px">Topics</div><div class="muted" style="font-size:12px;margin-top:2px">Made by the AI as you save. Rename or merge any time.</div></div>
+ <div class="scroll" style="padding-top:6px">${TOPICS.map(t=>`<div class="topicrow"><span style="width:10px;height:38px;border-radius:5px;background:${TC.A[t[0]]};flex:none"></span>
+  <div class="grow"><div style="font-family:var(--hf);font-size:16px;font-weight:600">${t[0]}</div><div class="muted" style="font-size:11.5px;margin-top:2px">${t[1]} saves · ${t[2]} new this week</div></div>
+  <div class="bars">${bars[t[0]].map(v=>`<i style="height:${4+v*6}px;background:${TC.A[t[0]]};opacity:${v?1:.25}"></i>`).join('')}</div></div>`).join('')}
+  <div class="topicrow" style="border-style:dashed;background:transparent"><span style="width:10px;height:38px;border-radius:5px;background:var(--line);flex:none"></span><div class="grow"><div style="font-family:var(--hf);font-size:16px;font-weight:600">Unsorted</div><div class="muted" style="font-size:11.5px;margin-top:2px">2 waiting for the AI</div></div><span class="muted">›</span></div>
+  <div class="muted" style="font-size:11px;padding:6px 16px">Bars show saves per day over the last 7 days.</div>
+ </div>`+A_nav('Topics');
+}
+function A_topic(){
+ return sb()+`<div class="pad"><div class="row between"><div class="ico" style="margin-left:-8px">←</div><div class="ico">⋯</div></div>
+  <div class="row" style="gap:8px"><span class="dot" style="background:${TC.A.Trading};width:10px;height:10px"></span><div style="font-family:var(--hf);font-size:26px;font-weight:600">Trading</div></div>
+  <div class="muted" style="font-size:12px;margin-top:2px">24 saves · last one yesterday at 11:42 PM</div></div>
+  <div class="chips"><div class="chip on">All tags</div><div class="chip">options <small>7</small></div><div class="chip">crypto <small>6</small></div><div class="chip">risk <small>4</small></div><div class="chip">scanner <small>3</small></div></div>
+  <div class="scroll"><div class="tl">${A_day('y',[1,2],{topic:false})}${A_day('s',[4],{topic:false})}${A_day('w',[8],{topic:false})}</div></div>`+A_nav('Topics');
+}
+function A_detail(){
+ const it=byId(1);
+ return sb()+`<div style="filter:blur(1px);opacity:.6;flex:1;overflow:hidden">${A_day('y',[1,2,3])}</div><div class="dim" style="background:rgba(30,25,20,.45)"></div>
+ <div class="sheet"><div class="grab"></div>
+  ${thumb(it,'100%',118,14,22)}
+  <div style="font-family:var(--hf);font-size:18px;font-weight:600;line-height:1.3;margin-top:12px">${it.title}</div>
+  <div class="row muted" style="font-size:11.5px;margin-top:6px;gap:5px">${badge('x')} @quantdesk · saved yesterday, 11:42 PM</div>
+  <div style="font-size:12.5px;line-height:1.55;margin-top:10px;color:#3d3830">${it.brief}</div>
+  <div style="margin-top:10px"><span class="tag" style="border-color:${TC.A.Trading};color:${TC.A.Trading};font-weight:600">● Trading</span>${it.tags.map(t=>`<span class="tag">${t}</span>`).join('')}<span class="tag" style="border-style:dashed">+ tag</span></div>
+  <div class="row" style="gap:8px;margin-top:8px"><div class="btn grow">Open on X ↗</div><div class="btn2" style="padding:12px 13px">⧉</div><div class="btn2" style="padding:12px 13px">🗑</div></div>
+ </div>`;
+}
+function A_search(){
+ return sb()+`<div class="pad"><div class="row" style="gap:6px"><div class="ico" style="margin-left:-8px">←</div><div class="search grow" style="margin:0;color:var(--ink);border-color:var(--acc)">⌕ scanner<span style="margin-left:auto" class="muted">✕</span></div></div></div>
+ <div class="chips"><div class="chip">Any time ▾</div><div class="chip">All sources ▾</div><div class="chip">All topics ▾</div></div>
+ <div class="scroll">
+  <div class="day" style="font-size:14px">Trading<small>2 results</small></div>
+  ${A_item(byId(1)).replace('scanner','<span class="hl">scanner</span>')}
+  <div class="it">${thumb({g:['#10302a','#3ddc97'],gl:'Δ'},48,48,10)}<div class="grow"><div class="s clamp2">Momentum <span class="hl">scanner</span> for crypto pairs, built on free exchange APIs</div><div class="m">${badge('gh')}<span>kryptoscan/scan</span>·<span>Oct 21</span></div></div></div>
+  <div class="day" style="font-size:14px">Security<small>1 result</small></div>
+  <div class="it">${thumb({g:['#3a1214','#ff5d5d'],gl:'443'},48,48,10,11)}<div class="grow"><div class="s clamp2">Fast open-source TLS <span class="hl">scanner</span> that maps weak ciphers across a subnet</div><div class="m">${badge('rd')}<span>r/netsec</span>·<span>Sep 30</span></div></div></div>
+  <div class="muted" style="font-size:11px;padding:8px 16px">Searches summaries, tags, titles, authors and post text.</div>
+ </div>`+A_nav('Search');
+}
+function A_states(){
+ return sb()+`<div class="pad" style="padding-bottom:4px"><div class="wm">Smaran</div></div>
+ <div class="pad" style="padding-top:4px"><div class="banner"><b>2 saves are waiting for the AI.</b> Claude's usage limit was reached, so we'll retry at 6:00 PM. Nothing is lost.<div style="margin-top:6px;font-weight:600;color:var(--acc)">Retry now</div></div></div>
+ <div class="scroll"><div class="day">Today<small>just now</small></div>
+  <div class="it"><div style="width:48px;height:48px;border-radius:10px;background:var(--chip);flex:none"></div><div class="grow"><div class="shimmer" style="width:90%"></div><div class="shimmer" style="width:60%;margin-top:6px"></div><div class="m">${badge('x')}<span>Reading the post from x.com…</span></div></div></div>
+  <div class="it" style="opacity:.85"><div style="width:48px;height:48px;border-radius:10px;background:var(--chip);flex:none;display:grid;place-items:center" class="muted">⏸</div><div class="grow"><div class="s clamp2">reddit.com/r/IndiaInvestments/comments/1q…</div><div class="m">${badge('rd')}<span>Waiting for AI · retry 6:00 PM</span></div></div></div>
+  <div class="it">${thumb({g:['#3b1d4a','#f58529'],gl:'▶'},48,48,10)}<div class="grow"><div class="s clamp2">Instagram reel from @chartmonk</div><div class="m" style="color:var(--acc)">Couldn't read it, so we kept the link and caption · <b>Add note</b></div></div></div>
+  ${A_day('y',[1,2])}</div>`+A_nav('Timeline');
+}
+function renderA(){
+ const D='A',n='Smaran',L='C';
+ return `<div class="intro"><div><h2>A · Smaran: calm journal</h2>
+  <p>A cairn is a stack of stones left to mark a trail you walked. Here the home screen <b>is the timeline</b>: Today, Yesterday, Sunday. Topics sit as filter chips across the top. Inside a topic, saves hang off a journal-style line, so "that trading thing from two nights ago" means one tap and a glance.</p>
+  <ul><li>Warm paper background with serif headings: reads like a notebook, not a feed</li><li>Small thumbnails, so you can scan more per screen</li><li>Detail opens as a bottom sheet, so you never lose your place</li></ul></div>
+  <div><div class="kv"><b>Type:</b> Fraunces (headings) + Inter (text)<br><b>Mood:</b> quiet, personal, unhurried<br><b>Best at:</b> "when did I save it?"</div>
+  <div class="sw"><span style="background:#F6F2EA"><i>paper</i></span><span style="background:#221F1A"><i>ink</i></span><span style="background:#C8553D"><i>terracotta</i></span><span style="background:#2F7D5B"><i>trading</i></span><span style="background:#B4443A"><i>security</i></span><span style="background:#3C5FA8"><i>tools</i></span></div></div></div>
+ <div class="group">Setup</div><div class="screens">
+  ${phone(D,connect(D,n),['1 · Connect your AI','First run. You pick a provider and sign in with your subscription or paste an API key. Only post text leaves the phone.'])}
+  ${phone(D,paste(D),['2 · Paste the code','The Claude and Gemini logins show a code; the app spots it on your clipboard. ChatGPT uses a short code you type on its website instead.'])}
+  ${phone(D,settings(D,n),['3 · Settings','Provider status, model, switch to an API key, merge topics, export and import backups.'])}
+ </div>
+ <div class="group">Capture</div><div class="screens">
+  ${phone(D,shareSheet(D,n,L),['4 · Share from any app','The Android share sheet from X. Smaran shows up once you pin it to the top.'])}
+  ${phone(D,savedToast(D,n,L),['5 · Saved instantly','You stay in X. A quick confirmation appears with Undo and Add note, and the AI works in the background.'])}
+  ${phone(D,A_states(),['6 · Waiting & failed states','Nothing is ever lost: saves are queued when you\'re offline or out of quota, and a failed fetch still keeps the link and caption.'])}
+ </div>
+ <div class="group">Find it again</div><div class="screens">
+  ${phone(D,A_home(),['7 · Home = timeline','Grouped by day, with topic chips to filter. The dot on the right means not opened yet.'])}
+  ${phone(D,A_topics(),['8 · Topics','Topics the AI created, with how many new ones this week and a 7-day activity bar.'])}
+  ${phone(D,A_topic(),['9 · One topic over time','Trading, as a journal line. The tag chips narrow it further (options, crypto, risk…).'])}
+  ${phone(D,A_detail(),['10 · Detail sheet','Larger thumbnail, one-line summary, a short brief, tags you can edit, and one tap to the original.'])}
+  ${phone(D,A_search(),['11 · Keyword search','Results grouped by topic, with time, source and topic filters.'])}
+  ${phone(D,lock(D,n,L),['12 · Reminders','The "Remember this one?" nudge for unopened saves, plus a Sunday weekly recap.'],true)}
+ </div>`;
+}
+
+/* ========== Direction B: Trove ========== */
+function B_nav(on){return `<div class="nav">${[['⌂','Home'],['☰','Timeline'],['⌕','Search'],['⚙','Settings']].map(([i,l])=>`<div class="${l===on?'on':''}"><b>${i}</b>${l}</div>`).join('')}</div>`+gest();}
+function B_home(){
+ const wk=[['W',1,4],['T',0,5],['F',2,6],['S',1,7],['S',2,8],['M',3,9],['T',2,10]];
+ return sb()+`<div class="pad" style="padding-bottom:0"><div class="row between"><div class="wm">trove<i>.</i></div><div class="muted" style="font-size:11px">142 saved</div></div>
+  <div class="search">⌕ Search everything you saved</div></div>
+  <div class="h">This week<small>tap a day</small></div>
+  <div class="week">${wk.map(([d,v,n],i)=>`<div class="wd ${i===5?'on':''}">${d}<div class="bar"><i style="height:${v*9}px;background:${i===5?'#0E0F13':'var(--acc)'};opacity:${i===5?.7:.85}"></i></div><b>${n}</b></div>`).join('')}</div>
+  <div class="h">Topics<small>edit</small></div>
+  <div class="tiles">${TOPICS.map(t=>{const c=TC.B[t[0]];const its=ITEMS.filter(i=>i.topic===t[0]).slice(0,3);return `<div class="tile" style="background:linear-gradient(160deg,color-mix(in srgb,${c} 32%,#181A21),#181A21 85%);border:1px solid color-mix(in srgb,${c} 30%,transparent)">
+   <div class="n" style="color:${c}">${t[0]}</div><div class="c">${t[1]} saves</div><div class="new" style="color:${c}">+${t[2]}</div>
+   <div class="stack">${its.map(i=>thumb(i,26,26,8,8)).join('')}</div></div>`}).join('')}</div>
+  <div class="h">Just saved<small>see all</small></div>
+  <div class="car">${[6,9].map(id=>{const it=byId(id);return `<div class="cc">${thumb(it,150,64,0,16)}<div class="s clamp2">${it.title}</div><div class="m">${badge(it.src)}${it.time}</div></div>`}).join('')}</div>
+  <div style="flex:1"></div>`+B_nav('Home');
+}
+function B_card(it){
+ const c=TC.B[it.topic];
+ return `<div class="bc">${thumb(it,'100%',96,0,22)}
+  <div class="s clamp2">${it.title}</div><div class="m">${badge(it.src)}<span>${it.who}</span>·<span>${it.time}</span>${it.unread?'<span style="margin-left:auto;color:var(--acc);font-weight:700;font-size:10px">● NEW</span>':''}</div></div>`;
+}
+function B_topic(){
+ const c=TC.B.Trading;
+ return `<div style="background:linear-gradient(180deg,color-mix(in srgb,${c} 38%,#0E0F13),#0E0F13);flex:none">${sb()}
+  <div class="pad"><div class="row between"><div class="ico" style="margin-left:-8px">←</div><div class="ico">⋯</div></div>
+  <div style="font-family:var(--hf);font-size:30px;font-weight:700;color:${c};letter-spacing:-.02em">Trading</div>
+  <div style="font-size:12px;opacity:.8">24 saves · 3 new this week</div></div></div>
+  <div class="seg"><div class="on">Timeline</div><div>By tag</div><div>Unopened</div></div>
+  <div style="padding:0 16px"><span class="tag on">all</span><span class="tag">options</span><span class="tag">crypto</span><span class="tag">risk</span><span class="tag">scanner</span></div>
+  <div class="scroll"><div class="dh">Yesterday · Mon 9 Nov</div>${B_card(byId(1))}${B_card(byId(2))}</div>`+B_nav('Home');
+}
+function B_timeline(){
+ const row=it=>`<div class="tlr" style="border-left-color:${TC.B[it.topic]}">${thumb(it,44,44,10,11)}<div class="grow"><div class="s clamp2">${it.title}</div><div class="m">${badge(it.src)}<span style="color:${TC.B[it.topic]};font-weight:600">${it.topic}</span>·${it.time}</div></div>${it.unread?'<span class="dot" style="background:var(--acc)"></span>':''}</div>`;
+ const grp=(k,ids)=>`<div class="dh">${DAYS[k][0]} · ${DAYS[k][1]}</div>`+ids.map(i=>row(byId(i))).join('');
+ return sb()+`<div class="pad"><div style="font-family:var(--hf);font-size:24px;font-weight:700">Timeline</div></div>
+  <div style="padding:0 16px 2px"><span class="tag on">All</span>${TOPICS.map(t=>`<span class="tag"><span class="dot" style="background:${TC.B[t[0]]};margin-right:5px"></span>${t[0]}</span>`).join('')}</div>
+  <div class="scroll">${grp('t',[6,9])}${grp('y',[1,2,3])}${grp('s',[4,5])}</div>`+B_nav('Timeline');
+}
+function B_detail(){
+ const it=byId(1);
+ return `<div style="position:relative;flex:none">${thumb(it,'100%',230,0,40)}
+  <div style="position:absolute;top:0;left:0;right:0">${sb(true)}<div class="row between pad"><div class="ico" style="background:rgba(0,0,0,.45);color:#fff">←</div><div class="ico" style="background:rgba(0,0,0,.45);color:#fff">⋯</div></div></div></div>
+  <div class="pad" style="padding-top:14px">
+   <span class="tag" style="background:color-mix(in srgb,${TC.B.Trading} 20%,transparent);color:${TC.B.Trading};font-weight:700">TRADING</span>
+   <div style="font-family:var(--hf);font-size:19px;font-weight:700;line-height:1.28;margin-top:4px">${it.title}</div>
+   <div class="row muted" style="font-size:11.5px;margin-top:8px;gap:6px">${badge('x')} @quantdesk · yesterday 11:42 PM</div>
+   <div style="font-size:12.5px;line-height:1.55;margin-top:12px;color:#c9ccd6">${it.brief}</div>
+   <div style="margin-top:12px">${it.tags.map(t=>`<span class="tag">#${t}</span>`).join('')}<span class="tag" style="border:1px dashed var(--line);background:none">+ tag</span></div>
+  </div><div style="flex:1"></div>
+  <div class="pad row" style="gap:8px;padding-bottom:6px"><div class="btn grow" style="border-radius:14px">Open on X ↗</div><div class="btn2" style="padding:12px 13px;background:var(--card);border:none">⧉</div><div class="btn2" style="padding:12px 13px;background:var(--card);border:none">↻</div></div>`+gest();
+}
+function B_search(){
+ return sb()+`<div class="pad"><div class="search" style="margin:0;color:var(--ink);box-shadow:0 0 0 1.5px var(--acc)">⌕ scanner<span style="margin-left:auto" class="muted">✕</span></div></div>
+  <div style="padding:2px 16px 4px"><span class="tag">When: any ▾</span><span class="tag">Topic ▾</span><span class="tag">Source ▾</span></div>
+  <div class="dh">3 results</div>
+  <div class="scroll">${B_card(byId(1)).replace('scanner','<span class="hl">scanner</span>')}
+  <div class="tlr" style="border-left-color:${TC.B.Security}">${thumb({g:['#3a1214','#ff5d5d'],gl:'443'},44,44,10,11)}<div class="grow"><div class="s clamp2">Fast open-source TLS <span class="hl">scanner</span> that maps weak ciphers</div><div class="m">${badge('rd')}<span style="color:${TC.B.Security};font-weight:600">Security</span>·Sep 30</div></div></div>
+  <div class="dh">Recent searches</div><div style="padding:0 16px"><span class="tag">options</span><span class="tag">ollama</span><span class="tag">CVE</span><span class="tag">elections</span></div></div>`+B_nav('Search');
+}
+function B_states(){
+ const row=(th,s,m,st)=>`<div class="tlr" style="border-left-color:var(--line);${st||''}">${th}<div class="grow">${s}<div class="m">${m}</div></div></div>`;
+ return sb()+`<div class="pad"><div style="font-family:var(--hf);font-size:24px;font-weight:700">Timeline</div></div>
+  <div class="pad" style="padding-top:0"><div class="banner" style="background:#1d2410;border-color:#3d4f12;color:#e5f5b5"><b>2 waiting for AI.</b> Claude limit reached. Auto-retry at 6:00 PM. <b style="color:var(--acc)">Retry now →</b></div></div>
+  <div class="scroll"><div class="dh">Just now</div>
+   ${row('<div style="width:44px;height:44px;border-radius:10px;background:var(--chip);flex:none"></div>','<div class="shimmer" style="width:85%"></div><div class="shimmer" style="width:55%;margin-top:6px"></div>',`${badge('x')} Reading post…`)}
+   ${row('<div style="width:44px;height:44px;border-radius:10px;background:var(--chip);flex:none;display:grid;place-items:center;color:var(--muted)">⏸</div>','<div class="s clamp2">reddit.com/r/IndiaInvestments/comments/1q…</div>',`${badge('rd')} Waiting for AI`)}
+   ${row(thumb({g:['#3b1d4a','#f58529'],gl:'▶'},44,44,10),'<div class="s clamp2">Instagram reel from @chartmonk</div>',`<span style="color:#ffb547">Kept link + caption · add note</span>`)}
+   <div class="dh">Yesterday</div>${row(thumb(byId(1),44,44,10,11),`<div class="s clamp2">${byId(1).title}</div>`,`${badge('x')}<span style="color:${TC.B.Trading};font-weight:600">Trading</span>· 11:42 PM`,`border-left-color:${TC.B.Trading}`)}
+  </div>`+B_nav('Timeline');
+}
+function renderB(){
+ const D='B',n='Trove',L='T';
+ return `<div class="intro"><div><h2>B · Trove: topic shelves</h2>
+  <p>A trove is a hoard of treasure. Home is a <b>dashboard</b>: a 7-day strip on top ("what did I save on Monday?"), colourful topic tiles that show what's new, and your latest saves. Each topic opens like a magazine, with big visual cards, and the Timeline tab gives the full day-by-day view.</p>
+  <ul><li>Dark and high-contrast, with a lime accent and a colour per topic</li><li>Big thumbnails: best when you remember how something <i>looked</i></li><li>Detail is a full-screen page with a large image</li></ul></div>
+  <div><div class="kv"><b>Type:</b> Space Grotesk (headings) + Inter<br><b>Mood:</b> energetic, modern, a bit playful<br><b>Best at:</b> "what's in my trading pile?"</div>
+  <div class="sw"><span style="background:#0E0F13"><i>night</i></span><span style="background:#181A21"><i>card</i></span><span style="background:#C6F432"><i>lime</i></span><span style="background:#3DDC97"><i>trading</i></span><span style="background:#FF5D5D"><i>security</i></span><span style="background:#5B8CFF"><i>tools</i></span></div></div></div>
+ <div class="group">Setup</div><div class="screens">
+  ${phone(D,connect(D,n),['1 · Connect your AI','Same choice as in every direction: Claude, ChatGPT or Gemini, signed in with your subscription or an API key.'])}
+  ${phone(D,paste(D),['2 · Paste the code','Fast path: the code is spotted on your clipboard.'])}
+  ${phone(D,settings(D,n),['3 · Settings','Same structure, dark theme.'])}
+ </div>
+ <div class="group">Capture</div><div class="screens">
+  ${phone(D,shareSheet(D,n,L),['4 · Share from any app','Trove pinned at the top of the Android share sheet.'])}
+  ${phone(D,savedToast(D,n,L),['5 · Saved instantly','Confirmation without leaving X.'])}
+  ${phone(D,B_states(),['6 · Waiting & failed states','A queue banner plus a status on each row; nothing is lost.'])}
+ </div>
+ <div class="group">Find it again</div><div class="screens">
+  ${phone(D,B_home(),['7 · Home dashboard','A strip of the last 7 days (Mon, yesterday, is selected here), topic tiles with "+3 new", and the latest saves.'])}
+  ${phone(D,B_timeline(),['8 · Timeline tab','Every save by day, with topic colour on the left edge, filterable by topic.'])}
+  ${phone(D,B_topic(),['9 · One topic','A coloured header, plus Timeline / By tag / Unopened views and large visual cards.'])}
+  ${phone(D,B_detail(),['10 · Detail page','Full screen: big image, summary, brief, tags, and Open on X pinned at the bottom.'])}
+  ${phone(D,B_search(),['11 · Keyword search','Results as cards with highlighted matches, plus recent searches.'])}
+  ${phone(D,lock(D,n,L),['12 · Reminders','The same nudge and weekly recap, branded as Trove.'],true)}
+ </div>`;
+}
+
+/* ========== Direction C: Glean ========== */
+function C_nav(on){return `<div class="nav">${[['≡','Index'],['#','Topics'],['⌕','Find'],['⚙','Settings']].map(([i,l])=>`<div class="${l===on?'on':''}"><b>${i}</b>${l}</div>`).join('')}</div>`+gest();}
+function C_row(it,opts={}){
+ return `<div class="r">${thumb(it,34,34,6,9)}<div class="grow"><div class="s clamp2">${it.title}</div>
+  <div class="m">${badge(it.src)}<span>${it.who}</span><span>${it.t24}</span>${opts.topic===false?'':`<span style="color:${TC.C[it.topic]};font-weight:600">${it.topic.toLowerCase()}</span>`}</div></div>${it.unread?'<span class="new"></span>':''}</div>`;
+}
+function C_grp(k,label,ids,opts){const [d,n]=label;return `<div class="grp"><div class="gut">${d}<b>${n}</b></div><div>${ids.map(i=>C_row(byId(i),opts)).join('')}</div></div>`;}
+function C_heat(){
+ const v=[0,1,0,2,1,0,3,1,0,0,2,1,1,0,2, 1,0,2,3,1,0,1,2,0,1,3,2,1,2,2];
+ const col=x=>['#ECECE8','#CFC6FB','#9C88F7','#4B2BF0'][x];
+ return `<div class="heat"><div class="g">${v.map((x,i)=>`<i style="background:${col(x)};${i===28?'outline:1.5px solid #121212;outline-offset:1px':''}"></i>`).join('')}</div><div class="lbl"><span>12 OCT</span><span>last 30 days · 41 saves</span><span>TODAY</span></div></div>`;
+}
+function C_home(){
+ return sb()+`<div class="pad" style="padding-bottom:0"><div class="row between"><div class="wm">glean<i>_</i></div><span class="mono muted" style="font-size:10.5px">142 items</span></div>
+  <div class="cmd">⌕ find or filter… <span class="kbd">#tag @src</span></div></div>
+  ${C_heat()}
+  <div class="tabs2"><div class="on">All<small>142</small></div>${TOPICS.map(t=>`<div>${t[0]}<small>${t[1]}</small></div>`).join('')}</div>
+  <div class="scroll">${C_grp('t',['tue','10'],[6,9])}${C_grp('y',['mon','09'],[1,2,3])}${C_grp('s',['sun','08'],[4,5])}</div>`+C_nav('Index');
+}
+function C_topics(){
+ const sp={Trading:'0,14 10,10 20,12 30,4 40,8 50,2 60,6',Tools:'0,8 10,12 20,6 30,10 40,4 50,9 60,7',Security:'0,12 10,6 20,13 30,8 40,12 50,5 60,8',Politics:'0,14 10,14 20,8 30,14 40,14 50,9 60,14'};
+ return sb()+`<div class="pad"><div class="row between"><div style="font-size:20px;font-weight:700;letter-spacing:-.02em">Topics</div><span class="mono muted" style="font-size:10.5px">sort: recent ▾</span></div></div>
+ <div class="scroll" style="padding:0 16px"><table>
+  <tr class="mono muted" style="font-size:9.5px"><td>TOPIC</td><td style="text-align:right">ITEMS</td><td>30D</td><td style="text-align:right">LAST</td></tr>
+  ${TOPICS.map(t=>`<tr><td><span class="dot" style="background:${TC.C[t[0]]};margin-right:7px"></span><b style="font-weight:600">${t[0]}</b><div class="mono muted" style="font-size:9.5px;margin:2px 0 0 14px">+${t[2]} unopened</div></td><td class="mono" style="text-align:right">${t[1]}</td><td><svg width="62" height="16"><polyline points="${sp[t[0]]}" fill="none" stroke="${TC.C[t[0]]}" stroke-width="1.6"/></svg></td><td class="mono muted" style="text-align:right;font-size:10.5px">${{Trading:'1d',Tools:'0d',Security:'0d',Politics:'2d'}[t[0]]}</td></tr>`).join('')}
+  <tr style="opacity:.6"><td><span class="dot" style="background:#bbb;margin-right:7px"></span>unsorted<div class="mono muted" style="font-size:9.5px;margin:2px 0 0 14px">waiting for AI</div></td><td class="mono" style="text-align:right">2</td><td></td><td class="mono muted" style="text-align:right;font-size:10.5px">now</td></tr>
+ </table>
+ <div class="mono muted" style="font-size:10px;margin-top:12px;line-height:1.6">long-press a topic → rename · merge · hide</div></div>`+C_nav('Topics');
+}
+function C_topic(){
+ return sb()+`<div class="pad" style="padding-bottom:0"><div class="row" style="gap:6px"><span class="ico" style="margin-left:-8px">←</span><span class="dot" style="background:${TC.C.Trading}"></span><span style="font-size:20px;font-weight:700;letter-spacing:-.02em">Trading</span></div>
+  <div class="mono muted" style="font-size:10.5px;margin-top:2px">24 items · 5 this week · 6 unopened · last mon 23:42</div></div>
+  <div class="tcl"><span class="on">all <small>24</small></span><span>#options <small>7</small></span><span>#crypto <small>6</small></span><span>#risk <small>4</small></span><span>#scanner <small>3</small></span><span>#bot <small>3</small></span><span>#swing <small>2</small></span></div>
+  <div class="scroll" style="border-top:1px solid var(--line)">${C_grp('y',['mon','09'],[1,2],{topic:false})}${C_grp('s',['sun','08'],[4],{topic:false})}${C_grp('w',['mon','02'],[8],{topic:false})}</div>`+C_nav('Topics');
+}
+function C_detail(){
+ const it=byId(1);
+ return sb()+`<div style="flex:1;overflow:hidden;opacity:.45">${C_grp('y',['mon','09'],[1,2,3])}</div><div class="dim" style="background:rgba(250,250,248,.4)"></div>
+ <div class="sheet"><div class="grab"></div>
+  <div class="row" style="gap:10px;align-items:flex-start">${thumb(it,64,64,8,14)}<div class="grow"><div style="font-size:15px;font-weight:700;line-height:1.3;letter-spacing:-.01em">${it.title}</div></div></div>
+  <div style="font-size:12.3px;line-height:1.55;margin-top:10px;color:#3a3a3a">${it.brief}</div>
+  <dl class="meta"><dt>source</dt><dd class="row" style="gap:5px">${badge('x')} @quantdesk</dd><dt>saved</dt><dd class="mono" style="font-size:11px">mon 09 nov · 23:42</dd><dt>topic</dt><dd><span class="dot" style="background:${TC.C.Trading};margin-right:5px"></span>Trading <span class="muted">· change</span></dd><dt>tags</dt><dd class="tg">#options #scanner #open-source <span class="muted">+ add</span></dd><dt>link</dt><dd class="mono clamp1" style="font-size:10.5px">x.com/quantdesk/status/1855…</dd></dl>
+  <div class="row" style="gap:8px"><div class="btn grow">Open original ↗</div><div class="btn2" style="padding:12px">copy</div><div class="btn2" style="padding:12px">del</div></div>
+ </div>`;
+}
+function C_find(){
+ return sb()+`<div class="pal" style="top:30px">
+  <div class="pad"><div class="cmd" style="margin:0;color:var(--ink);border-color:var(--acc);box-shadow:0 0 0 3px #4B2BF022">⌕ scanner <span style="color:var(--acc)">#trading</span><span class="kbd">esc</span></div></div>
+  <div class="hint"><span><b>#</b>topic/tag</span><span><b>@</b>source</span><span><b>&lt;7d</b> time</span><span><b>!</b>unopened</span></div>
+  <div class="mono muted" style="font-size:10px;padding:10px 16px 2px">2 MATCHES · trading</div>
+  <div style="border-top:1px solid var(--line)">${C_row(byId(1)).replace('scanner','<span class="hl">scanner</span>')}
+   <div class="r">${thumb({g:['#10302a','#3ddc97'],gl:'Δ'},34,34,6,9)}<div class="grow"><div class="s clamp2">Momentum <span class="hl">scanner</span> for crypto pairs, built on free exchange APIs</div><div class="m">${badge('gh')}<span>kryptoscan/scan</span><span>21 Oct</span><span style="color:${TC.C.Trading};font-weight:600">trading</span></div></div></div></div>
+  <div class="mono muted" style="font-size:10px;padding:14px 16px 6px">SUGGESTED</div>
+  <div class="tcl" style="padding-top:0"><span>#options</span><span>@github</span><span>&lt;7d !unopened</span><span>@quantdesk</span></div>
+  <div style="flex:1"></div>${gest()}</div>`;
+}
+function C_states(){
+ return sb()+`<div class="pad" style="padding-bottom:6px"><div class="row between"><div class="wm">glean<i>_</i></div><span class="mono" style="font-size:10.5px;color:var(--acc)">● 2 queued</span></div></div>
+  <div class="pad" style="padding-top:0"><div class="banner mono" style="font-size:10.5px;line-height:1.6;border-radius:6px">queue: 2 waiting · claude limit hit<br>next retry 18:00 · <b style="color:var(--acc)">[retry now]</b></div></div>
+  <div class="scroll" style="border-top:1px solid var(--line)">
+   <div class="grp"><div class="gut">now</div><div>
+    <div class="r"><div style="width:34px;height:34px;border-radius:6px;background:var(--chip);flex:none"></div><div class="grow"><div class="shimmer" style="width:88%"></div><div class="shimmer" style="width:50%;margin-top:6px"></div><div class="m">${badge('x')}<span>fetching x.com…</span></div></div></div>
+    <div class="r"><div style="width:34px;height:34px;border-radius:6px;background:var(--chip);flex:none;display:grid;place-items:center" class="muted">‖</div><div class="grow"><div class="s clamp1 mono" style="font-size:11px">reddit.com/r/IndiaInvestments/…</div><div class="m">${badge('rd')}<span>queued for ai</span></div></div></div>
+    <div class="r">${thumb({g:['#3b1d4a','#f58529'],gl:'▶'},34,34,6,9)}<div class="grow"><div class="s clamp1">Reel from @chartmonk</div><div class="m"><span style="color:#C27803">partial · link + caption kept</span></div></div></div>
+   </div></div>${C_grp('y',['mon','09'],[1,2])}</div>`+C_nav('Index');
+}
+function renderC(){
+ const D='C',n='Glean',L='g';
+ return `<div class="intro"><div><h2>C · Glean: dense index</h2>
+  <p>To glean is to gather what others left behind. Home is a <b>precise index</b>: a 30-day activity heatmap (tap a square to jump to that day), topic tabs, and compact rows with a date gutter on the left. Search works like a command bar, with tokens such as <span class="mono">#trading</span>, <span class="mono">@x</span>, <span class="mono">&lt;7d</span> and <span class="mono">!unopened</span>.</p>
+  <ul><li>Lots of saves per screen: fits a library that grows into the thousands</li><li>Monospace metadata, a violet accent, minimal decoration</li><li>Feels like a tool for power users: precise, fast, keyboard-minded</li></ul></div>
+  <div><div class="kv"><b>Type:</b> Inter + JetBrains Mono<br><b>Mood:</b> precise, technical, efficient<br><b>Best at:</b> big libraries, exact retrieval</div>
+  <div class="sw"><span style="background:#FAFAF8"><i>paper</i></span><span style="background:#121212"><i>ink</i></span><span style="background:#4B2BF0"><i>violet</i></span><span style="background:#0E9F6E"><i>trading</i></span><span style="background:#E02D3C"><i>security</i></span><span style="background:#C27803"><i>politics</i></span></div></div></div>
+ <div class="group">Setup</div><div class="screens">
+  ${phone(D,connect(D,n),['1 · Connect your AI','Same provider choice, in a plainer and more technical style.'])}
+  ${phone(D,paste(D),['2 · Paste the code','Code spotted on your clipboard, with a monospace input.'])}
+  ${phone(D,settings(D,n),['3 · Settings','Same structure.'])}
+ </div>
+ <div class="group">Capture</div><div class="screens">
+  ${phone(D,shareSheet(D,n,L),['4 · Share from any app','Glean pinned in the share sheet.'])}
+  ${phone(D,savedToast(D,n,L),['5 · Saved instantly','Confirmation without leaving X.'])}
+  ${phone(D,C_states(),['6 · Waiting & failed states','Queue status in the header, with plain status text on each row.'])}
+ </div>
+ <div class="group">Find it again</div><div class="screens">
+  ${phone(D,C_home(),['7 · Home index','Heatmap → topic tabs → rows grouped by date. Violet dot = unopened.'])}
+  ${phone(D,C_topics(),['8 · Topics table','Count, 30-day trend line, how many are unopened, and when you last saved to each topic.'])}
+  ${phone(D,C_topic(),['9 · One topic','Tags with counts as filters, and a date gutter on the left.'])}
+  ${phone(D,C_detail(),['10 · Detail sheet','A metadata table: source, saved time, topic, tags and link, plus the brief.'])}
+  ${phone(D,C_find(),['11 · Command search','Type words plus tokens: #topic, @source, &lt;7d, !unopened. Suggestions come from your history.'])}
+  ${phone(D,lock(D,n,L),['12 · Reminders','The same nudge and weekly recap.'],true)}
+ </div>`;
+}
+
+document.getElementById('dirA').className='dir on A-wrap';
+document.getElementById('dirA').innerHTML=renderA();
+document.getElementById('dirB').innerHTML=renderB();
+document.getElementById('dirC').innerHTML=renderC();
+// apply theme classes to every screen inside each direction
+['A','B','C'].forEach(d=>document.querySelectorAll('#dir'+d+' .scr').forEach(s=>s.classList.add(d)));
+// toast/share/lock also need theme vars: they live inside .scr so inherit
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
+ document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
+ document.querySelectorAll('.dir').forEach(x=>x.classList.toggle('on',x.id==='dir'+t.dataset.t));
+ window.scrollTo({top:0,behavior:'smooth'});
+});
+</script>
+</body>
+</html>
