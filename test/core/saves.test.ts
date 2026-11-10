@@ -4,7 +4,7 @@ import { openTestDb } from '../helpers/sqlite';
 import { migrate } from '@/db/migrate';
 import {
   applyEnrichment, claimDue, createOrBumpSave, deleteSave, getSave, listTimeline,
-  queueSummary, retrySave, setStatus, setTags, updateFetched,
+  queueSummary, retryNow, retrySave, setStatus, setTags, updateFetched,
 } from '@/db/saves';
 
 async function freshDb() {
@@ -158,12 +158,12 @@ describe('queueSummary', () => {
     await setStatus(db, a.id, 'waiting_ai', 'quota', null, 9000, 1);
     await setStatus(db, b.id, 'waiting_ai', 'quota', null, 7000, 1);
     await setStatus(db, c.id, 'waiting_ai', 'offline', null, 8000, 1);
-    expect(await queueSummary(db)).toEqual({ waiting: 4, reason: 'quota', nextRetryAt: 7000 });
+    expect(await queueSummary(db)).toEqual({ waiting: 4, reason: 'quota', nextRetryAt: 7000, attempts: 1 });
   });
 
   it('reports an empty queue', async () => {
     const db = await freshDb();
-    expect(await queueSummary(db)).toEqual({ waiting: 0, reason: null, nextRetryAt: null });
+    expect(await queueSummary(db)).toEqual({ waiting: 0, reason: null, nextRetryAt: null, attempts: 0 });
   });
 });
 
@@ -208,5 +208,28 @@ describe('retrySave', () => {
     await retrySave(db, a.id);
     expect(await getSave(db, a.id)).toMatchObject({ nextRetryAt: null, attempts: 0 });
     expect(await getSave(db, b.id)).toMatchObject({ nextRetryAt: 9_999, attempts: 2 });
+  });
+});
+
+describe('saves stuck on a sign-in problem', () => {
+  // The provider rejected the sign-in: claimDue skips these until something clears the reason.
+  async function authExpiredSave() {
+    const db = await freshDb();
+    const { id } = await createOrBumpSave(db, webInput);
+    await setStatus(db, id, 'waiting_ai', 'auth_expired', 'HTTP 401', null, 1);
+    expect(await claimDue(db, 1000, 60_000, 10)).toEqual([]);
+    return { db, id };
+  }
+
+  it('"Retry AI" on the save makes it due again', async () => {
+    const { db, id } = await authExpiredSave();
+    await retrySave(db, id);
+    expect(await claimDue(db, 1000, 60_000, 10)).toEqual([id]);
+  });
+
+  it('"Retry now" makes it due again', async () => {
+    const { db, id } = await authExpiredSave();
+    await retryNow(db);
+    expect(await claimDue(db, 1000, 60_000, 10)).toEqual([id]);
   });
 });

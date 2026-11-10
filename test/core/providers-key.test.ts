@@ -3,7 +3,7 @@
 import { anthropicMessages } from '@/ai/providers/anthropic';
 import { openaiKeyProvider } from '@/ai/providers/openai';
 import { geminiKeyProvider } from '@/ai/providers/gemini';
-import { mapHttpError, DEFAULT_MODELS } from '@/ai/providers/errors';
+import { mapHttpError, DEFAULT_MODELS, withTimeout } from '@/ai/providers/errors';
 import { AiError } from '@/ai/types';
 import type { Http } from '@/core/types';
 
@@ -117,4 +117,25 @@ describe('mapHttpError', () => {
 it('has a default model for every provider', () => {
   expect(DEFAULT_MODELS['claude-key']).toBe('claude-haiku-5-5');
   expect(Object.keys(DEFAULT_MODELS)).toHaveLength(6);
+});
+
+describe('sign-in that stopped working', () => {
+  it('treats 403 as a credential the user must replace', () => {
+    expect(mapHttpError(403, 'forbidden', new Headers()).kind).toBe('auth_expired');
+  });
+
+  it("treats Anthropic's 'only authorized for use with Claude Code' 400 the same way", () => {
+    const body = '{"type":"error","error":{"type":"invalid_request_error","message":"This credential is only authorized for use with Claude Code and cannot be used for other API requests."}}';
+    expect(mapHttpError(400, body, new Headers()).kind).toBe('auth_expired');
+  });
+});
+
+describe('withTimeout', () => {
+  it('turns a request that never answers into a network error after the time limit', async () => {
+    // Like a dropped mobile connection: nothing arrives until the request is aborted.
+    const stalled: Http = (_input, init) =>
+      new Promise((_resolve, reject) => init?.signal?.addEventListener('abort', () => reject(new Error('aborted'))));
+    const provider = anthropicMessages(withTimeout(stalled, 20), { kind: 'key', key: 'K' });
+    await expect(provider.generateText(request)).rejects.toMatchObject({ kind: 'network' });
+  });
 });

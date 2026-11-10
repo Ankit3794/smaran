@@ -6,6 +6,19 @@ const DESKTOP_CHROME_UA =
   'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
 const DEFAULT_TIMEOUT_MS = 15000;
+// The whole body is read into memory, so a direct link to a video or disk image could crash the app (and crash it
+// again on every retry). Pages and API replies are far below this.
+const MAX_BODY_BYTES = 5 * 1024 * 1024;
+const READABLE_TYPE = /^(text\/|application\/(json|xml|xhtml\+xml|rss\+xml|atom\+xml|ld\+json)|[^;]*\+json)/i;
+
+// Checks the headers before downloading the body. 'not_found' makes the save partial straight away: retrying will not
+// turn a video file into a web page, and the link and shared text are kept.
+function refuseUnreadableBody(response: Response, url: string): void {
+  const type = response.headers?.get('content-type');
+  if (type && !READABLE_TYPE.test(type)) throw new ExtractError('not_found', `Not a web page (${type}) at ${url}`);
+  const length = Number(response.headers?.get('content-length'));
+  if (length > MAX_BODY_BYTES) throw new ExtractError('not_found', `Page too large (${length} bytes) at ${url}`);
+}
 
 export async function fetchText(
   http: Http,
@@ -25,6 +38,7 @@ export async function fetchText(
     }
     if (response.status === 404) throw new ExtractError('not_found', `HTTP 404 for ${url}`);
     if (!response.ok) throw new ExtractError('network', `HTTP ${response.status} for ${url}`);
+    refuseUnreadableBody(response, url);
     return { status: response.status, url: response.url || url, text: await response.text() };
   } catch (error) {
     if (error instanceof ExtractError) throw error;

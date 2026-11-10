@@ -4,6 +4,7 @@ import { createPkce, challengeFor } from '@/ai/auth/pkce';
 import { claudeAuthUrl, claudeExchange, claudeRefresh, CLAUDE_CODE_VERSION } from '@/ai/auth/claudeOAuth';
 import { anthropicMessages } from '@/ai/providers/anthropic';
 import { mapHttpError } from '@/ai/providers/errors';
+import { parseTokenResponse } from '@/ai/auth/tokens';
 import type { Http } from '@/core/types';
 
 const CLIENT_ID = '9d1c250a-e61b-44d9-88ed-5944d1962f5e';
@@ -152,5 +153,20 @@ describe('mapHttpError (extra usage)', () => {
   it('maps a 400 mentioning extra usage to quota_exceeded', () => {
     expect(mapHttpError(400, 'You are out of extra usage', new Headers())).toMatchObject({ kind: 'quota_exceeded' });
     expect(mapHttpError(400, 'bad request', new Headers())).toMatchObject({ kind: 'provider_error' });
+  });
+});
+
+describe('parseTokenResponse without expires_in', () => {
+  // The Codex CLI reads the expiry from the access token itself; its refresh replies can leave expires_in out.
+  const jwtWithExp = (exp: number) => `x.${Buffer.from(JSON.stringify({ exp })).toString('base64url')}.y`;
+
+  it('takes the expiry from the access token when it is a JWT', () => {
+    const tokens = parseTokenResponse({ access_token: jwtWithExp(5000), refresh_token: 'r' }, 1_000_000);
+    expect(tokens.expiresAt).toBe(5_000_000);
+  });
+
+  it('assumes one hour when the reply and the token say nothing', () => {
+    const tokens = parseTokenResponse({ access_token: 'opaque', refresh_token: 'r' }, 1_000_000);
+    expect(tokens.expiresAt).toBe(1_000_000 + 3600_000);
   });
 });

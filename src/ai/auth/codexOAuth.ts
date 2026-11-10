@@ -4,8 +4,7 @@
 import { AiError, type OAuthTokens } from '@/ai/types';
 import type { Http } from '@/core/types';
 import { mapHttpError } from '@/ai/providers/errors';
-import { parseTokenResponse } from '@/ai/auth/tokens';
-import { decodeBase64url } from '@/ai/auth/pkce';
+import { jwtClaims, parseTokenResponse } from '@/ai/auth/tokens';
 
 const CLIENT_ID = 'app_EMoamEEZ73f0CkXaXp7hrann';
 const AUTH_BASE = 'https://auth.openai.com';
@@ -36,16 +35,8 @@ async function readJson(response: Response): Promise<unknown> {
 
 // The Codex JWT carries the ChatGPT account id that the backend wants in a header.
 export function codexAccountId(accessToken: string): string | undefined {
-  const payload = accessToken.split('.')[1];
-  const bytes = payload === undefined ? undefined : decodeBase64url(payload);
-  if (bytes === undefined) return undefined;
-  try {
-    const claims = JSON.parse(new TextDecoder().decode(bytes));
-    const id = claims?.['https://api.openai.com/auth']?.chatgpt_account_id;
-    return typeof id === 'string' ? id : undefined;
-  } catch {
-    return undefined;
-  }
+  const auth = jwtClaims(accessToken)?.['https://api.openai.com/auth'] as { chatgpt_account_id?: unknown } | undefined;
+  return typeof auth?.chatgpt_account_id === 'string' ? auth.chatgpt_account_id : undefined;
 }
 
 function withAccountId(tokens: OAuthTokens): OAuthTokens {

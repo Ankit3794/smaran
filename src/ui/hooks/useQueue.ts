@@ -15,11 +15,12 @@ export interface QueueState {
   reason: StatusReason;
   nextRetryAt: number | null;
   providerId: string;
+  attempts: number;
 }
 
 export function useQueue() {
   const db = useDb();
-  const [queue, setQueue] = useState<QueueState>({ waiting: 0, reason: null, nextRetryAt: null, providerId: '' });
+  const [queue, setQueue] = useState<QueueState>({ waiting: 0, reason: null, nextRetryAt: null, providerId: '', attempts: 0 });
 
   const reload = useCallback(() => {
     Promise.all([queueSummary(db), getSetting(db, 'activeProvider', '')]).then(

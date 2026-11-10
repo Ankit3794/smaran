@@ -7,6 +7,7 @@ import TimelineScreen from '@/app/(tabs)/index';
 import { DbContext } from '@/db/DbProvider';
 import { listTimeline, queueSummary, retryNow } from '@/db/saves';
 import { runQueueNow } from '@/pipeline/runNow';
+import { queueMessage } from '@/ui/components/QueueBanner';
 import type { Save } from '@/core/types';
 import type { Db } from '@/db/db';
 
@@ -89,5 +90,17 @@ describe('Timeline', () => {
 
     await fireEvent.press(screen.getByText('All'));
     expect(await screen.findByText('TLS cipher mapper')).toBeOnTheScreen();
+  });
+});
+
+describe('queue banner wording when the AI sign-in stops working', () => {
+  it('names the provider and points to an API key or another provider', () => {
+    const message = queueMessage({ waiting: 3, reason: 'auth_expired', nextRetryAt: null, providerId: 'claude-sub', attempts: 1 });
+    expect(message.rest).toBe('Claude stopped accepting your sign-in. Sign in again, or use an API key or another provider, in Settings.');
+  });
+
+  it('says the provider keeps failing after repeated provider errors', () => {
+    const message = queueMessage({ waiting: 1, reason: 'provider_error', nextRetryAt: null, providerId: 'gemini-key', attempts: 3 });
+    expect(message.rest).toBe("Gemini keeps failing, so we'll retry soon. If it continues, try another provider in Settings.");
   });
 });

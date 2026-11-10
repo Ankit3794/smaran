@@ -2,6 +2,7 @@
 // Mirrors the real method names and return shapes so app code runs unchanged in tests.
 import { DatabaseSync, type SQLInputValue } from 'node:sqlite';
 import type { Db } from '@/db/db';
+import { queueTransactions } from '@/db/transactions';
 
 // expo-sqlite accepts either `(sql, a, b)` or `(sql, [a, b])`.
 function flattenParams(params: unknown[]): SQLInputValue[] {
@@ -12,7 +13,8 @@ export function openTestDb(): Db {
   const database = new DatabaseSync(':memory:');
   database.exec('PRAGMA foreign_keys = ON');
 
-  return {
+  // Same transaction queueing as the app's openDb, so tests see production behaviour.
+  return queueTransactions({
     execAsync: async (sql) => {
       database.exec(sql);
     },
@@ -35,5 +37,5 @@ export function openTestDb(): Db {
         throw error;
       }
     },
-  };
+  });
 }

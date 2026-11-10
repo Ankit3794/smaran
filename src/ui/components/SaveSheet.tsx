@@ -154,6 +154,12 @@ export function SaveSheet({ saveId, onClose }: Props) {
             {currentSave.url !== null && <Button label="Copy link" variant="secondary" onPress={copyLink} />}
             <Button label="Delete" variant="secondary" onPress={confirmDelete} />
           </View>
+          {/* The provider's own words help the user decide between waiting, retrying and switching provider. */}
+          {currentSave.status !== 'done' && currentSave.statusDetail !== null && (
+            <Text style={{ fontFamily: fonts.body, fontSize: 11.5, color: colors.muted, marginTop: 10 }} numberOfLines={3}>
+              Last error: {currentSave.statusDetail}
+            </Text>
+          )}
           {canRetryAi(currentSave) && <Button label="Retry AI" variant="secondary" onPress={retryAi} />}
         </ScrollView>
       </View>

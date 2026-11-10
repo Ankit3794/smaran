@@ -1,17 +1,19 @@
 // "I have an API key instead": pick Claude, OpenAI or Gemini, paste the key, and prove it works with a one-word test
-// before keeping it. A key that fails is removed again so nothing half-connected is left behind.
+// before keeping it. The test runs on the pasted key alone, so a key that fails changes nothing: the provider that
+// was working stays connected, and an older stored key is not touched.
 import { useState } from 'react';
 import { Text, TextInput, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import { getActiveProvider, testConnection } from '@/ai/registry';
-import { removeCredential, saveCredential } from '@/ai/credentials';
-import { AiError, type ProviderId } from '@/ai/types';
+import { activateProvider, keyProvider, testConnection } from '@/ai/registry';
+import { saveCredential } from '@/ai/credentials';
+import { DEFAULT_MODELS, withTimeout } from '@/ai/providers/errors';
+import { AiError } from '@/ai/types';
 import { useDb } from '@/db/DbProvider';
-import { setSetting } from '@/db/settings';
+import { getSetting } from '@/db/settings';
 import { Button } from '@/ui/components/Button';
 import { colors, fonts, radius } from '@/ui/theme';
 
-const KEY_PROVIDERS: { id: ProviderId; label: string }[] = [
+const KEY_PROVIDERS: { id: 'claude-key' | 'openai-key' | 'gemini-key'; label: string }[] = [
   { id: 'claude-key', label: 'Claude' },
   { id: 'openai-key', label: 'OpenAI' },
   { id: 'gemini-key', label: 'Gemini' },
@@ -20,7 +22,7 @@ const KEY_PROVIDERS: { id: ProviderId; label: string }[] = [
 export function ApiKeyForm() {
   const db = useDb();
   const router = useRouter();
-  const [providerId, setProviderId] = useState<ProviderId>('claude-key');
+  const [providerId, setProviderId] = useState<(typeof KEY_PROVIDERS)[number]['id']>('claude-key');
   const [key, setKey] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -28,16 +30,15 @@ export function ApiKeyForm() {
   async function submit() {
     setBusy(true);
     setError(null);
+    const pastedKey = key.trim();
     try {
-      await saveCredential(providerId, { kind: 'apiKey', key: key.trim() });
-      await setSetting(db, 'activeProvider', providerId);
-      const active = await getActiveProvider(db, fetch);
-      if (active === null) throw new AiError('not_connected', 'Could not use that key');
-      await testConnection(active.provider, active.model);
+      const model = await getSetting(db, `model.${providerId}`, DEFAULT_MODELS[providerId]);
+      await testConnection(keyProvider(providerId, withTimeout(fetch, 30_000), pastedKey), model);
+      // Only a key that answered is stored and switched to.
+      await saveCredential(providerId, { kind: 'apiKey', key: pastedKey });
+      await activateProvider(db, providerId);
       router.replace('/');
     } catch (caught) {
-      await removeCredential(providerId);
-      await setSetting(db, 'activeProvider', '');
       setError(caught instanceof AiError ? caught.message : 'Could not check that key. Please try again.');
       setBusy(false);
     }

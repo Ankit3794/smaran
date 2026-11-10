@@ -238,18 +238,24 @@ export async function rearmWaitingAi(db: Db, reasons: Array<'not_connected' | 'a
   await db.runAsync(`UPDATE saves SET status_reason = NULL WHERE status_reason IN (${placeholders}) AND status != 'done'`, reasons);
 }
 
-export async function queueSummary(db: Db): Promise<{ waiting: number; reason: StatusReason; nextRetryAt: number | null }> {
-  const totals = await db.getFirstAsync<{ waiting: number; next_retry_at: number | null }>(
-    `SELECT COUNT(*) AS waiting, MIN(next_retry_at) AS next_retry_at FROM saves WHERE ${UNFINISHED}`,
+// `attempts` is the most attempts any waiting save has had, so the banner can tell a passing hiccup from a provider
+// that keeps failing.
+export async function queueSummary(db: Db): Promise<{ waiting: number; reason: StatusReason; nextRetryAt: number | null; attempts: number }> {
+  const totals = await db.getFirstAsync<{ waiting: number; next_retry_at: number | null; attempts: number | null }>(
+    `SELECT COUNT(*) AS waiting, MIN(next_retry_at) AS next_retry_at, MAX(attempts) AS attempts FROM saves WHERE ${UNFINISHED}`,
   );
   const commonReason = await db.getFirstAsync<{ status_reason: StatusReason }>(
     `SELECT status_reason FROM saves WHERE ${UNFINISHED} AND status_reason IS NOT NULL
      GROUP BY status_reason ORDER BY COUNT(*) DESC, status_reason LIMIT 1`,
   );
-  return { waiting: totals?.waiting ?? 0, reason: commonReason?.status_reason ?? null, nextRetryAt: totals?.next_retry_at ?? null };
+  return {
+    waiting: totals?.waiting ?? 0,
+    reason: commonReason?.status_reason ?? null,
+    nextRetryAt: totals?.next_retry_at ?? null,
+    attempts: totals?.attempts ?? 0,
+  };
 }
 
-// "Retry now": makes every unfinished save due immediately instead of waiting for its scheduled retry time.
 // How many saves there are and how big the database file is, for the Settings "Saves on this phone" row.
 export async function libraryStats(db: Db): Promise<{ count: number; databaseBytes: number }> {
   const count = await db.getFirstAsync<{ count: number }>('SELECT COUNT(*) AS count FROM saves');
@@ -259,11 +265,16 @@ export async function libraryStats(db: Db): Promise<{ count: number; databaseByt
   return { count: count?.count ?? 0, databaseBytes: pages?.bytes ?? 0 };
 }
 
+// claimDue skips saves waiting on a connection or sign-in problem; a retry the user asks for clears that, so the save
+// is tried again (it simply goes back to waiting if the problem is still there).
+const CLEAR_WAITING_REASON = `status_reason = CASE WHEN status_reason IN ('not_connected', 'auth_expired') THEN NULL ELSE status_reason END`;
+
+// "Retry now": makes every unfinished save due immediately instead of waiting for its scheduled retry time.
 export async function retryNow(db: Db): Promise<void> {
-  await db.runAsync(`UPDATE saves SET next_retry_at = NULL WHERE ${UNFINISHED}`);
+  await db.runAsync(`UPDATE saves SET next_retry_at = NULL, ${CLEAR_WAITING_REASON} WHERE ${UNFINISHED}`);
 }
 
 // "Retry AI" on one save's detail sheet: forgets the backoff so the next queue run picks this save up straight away.
 export async function retrySave(db: Db, id: number): Promise<void> {
-  await db.runAsync('UPDATE saves SET next_retry_at = NULL, attempts = 0 WHERE id = ?', id);
+  await db.runAsync(`UPDATE saves SET next_retry_at = NULL, attempts = 0, ${CLEAR_WAITING_REASON} WHERE id = ?`, id);
 }

@@ -54,3 +54,18 @@ test('resolveShortLink sends the default user agent and returns the final URL', 
   expect(await resolveShortLink(http, 'https://t.co/abc')).toBe('https://t.co/abc');
   expect(requests[0].headers['User-Agent']).toContain('Mozilla/5.0');
 });
+
+test('does not download a link that is not a web page (a video file)', async () => {
+  const text = jest.fn();
+  const http = async () => ({ ok: true, status: 200, url: 'https://example.com/movie.mp4', headers: new Headers({ 'content-type': 'video/mp4' }), text }) as unknown as Response;
+  await expect(webExtractor('https://example.com/movie.mp4', { http, allowMirrors: true })).rejects.toMatchObject({ kind: 'not_found' });
+  expect(text).not.toHaveBeenCalled();
+});
+
+test('does not download a page larger than 5 MB', async () => {
+  const text = jest.fn();
+  const headers = new Headers({ 'content-type': 'text/html', 'content-length': String(50 * 1024 * 1024) });
+  const http = async () => ({ ok: true, status: 200, url: 'https://example.com/huge', headers, text }) as unknown as Response;
+  await expect(webExtractor('https://example.com/huge', { http, allowMirrors: true })).rejects.toMatchObject({ kind: 'not_found' });
+  expect(text).not.toHaveBeenCalled();
+});

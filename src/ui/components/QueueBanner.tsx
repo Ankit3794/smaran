@@ -14,6 +14,8 @@ function providerLabel(providerId: string): string {
   return 'Your AI provider';
 }
 
+const REPEATED_FAILURES = 3;
+
 export function queueMessage(queue: QueueState): { lead: string; rest: string } {
   const lead = `${queue.waiting} ${queue.waiting === 1 ? 'save is' : 'saves are'} waiting for the AI.`;
   const retryPhrase = queue.nextRetryAt === null ? 'retry soon' : `retry at ${clockTime(queue.nextRetryAt)}`;
@@ -25,7 +27,14 @@ export function queueMessage(queue: QueueState): { lead: string; rest: string } 
     case 'quota':
       return { lead, rest: `${providerLabel(queue.providerId)}'s usage limit was reached, so we'll ${retryPhrase}.` };
     case 'auth_expired':
-      return { lead, rest: 'Your AI sign-in expired. Sign in again in Settings.' };
+      // Spec §8.3: a subscription sign-in can be blocked by the provider, so offer the other ways out too.
+      return { lead, rest: `${providerLabel(queue.providerId)} stopped accepting your sign-in. Sign in again, or use an API key or another provider, in Settings.` };
+    case 'provider_error':
+      // A few failures are normal hiccups; after that, the user should know switching provider may help.
+      if (queue.attempts >= REPEATED_FAILURES) {
+        return { lead, rest: `${providerLabel(queue.providerId)} keeps failing, so we'll ${retryPhrase}. If it continues, try another provider in Settings.` };
+      }
+      return { lead, rest: `We'll ${retryPhrase}.` };
     default:
       return { lead, rest: `We'll ${retryPhrase}.` };
   }

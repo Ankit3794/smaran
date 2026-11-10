@@ -178,3 +178,10 @@ it('does not mark the save opened when the link cannot be opened', async () => {
   await waitFor(() => expect(Linking.openURL).toHaveBeenCalled());
   expect((await getSave(db, id))?.openedAt).toBeNull();
 });
+
+it("shows why a waiting save is stuck, using the provider's own error", async () => {
+  const { db, id } = await seed();
+  await db.runAsync("UPDATE saves SET status = 'waiting_ai', status_reason = 'provider_error', status_detail = 'HTTP 503: overloaded' WHERE id = ?", id);
+  await renderSheet(db, id);
+  expect(screen.getByText('Last error: HTTP 503: overloaded')).toBeTruthy();
+});

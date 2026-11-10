@@ -2,6 +2,7 @@
 // (mapHttpError), the JSON POST helper (postJson) and the empty-text check (requireText).
 // Keeps the background pipeline seeing one error vocabulary no matter which provider answered.
 import { AiError, type ProviderId } from '@/ai/types';
+import type { Http } from '@/core/types';
 
 // Cheapest fast model of each provider, checked against official docs on 2026-11-10.
 // Claude: Haiku class (docs.claude.com/en/docs/about-claude/models).
@@ -66,7 +67,10 @@ export function mapHttpError(status: number, body: string, headers: Headers): Ai
   const message = `HTTP ${status}: ${body.slice(0, 200)}`;
   // A dead refresh token comes back as 400 or 401 with invalid_grant: the user must sign in again.
   if ((status === 400 || status === 401) && body.includes('invalid_grant')) return new AiError('auth_expired', message);
-  if (status === 401) return new AiError('auth_expired', message);
+  // 401 and 403: the provider no longer accepts this credential, so retrying cannot help; the user must act.
+  if (status === 401 || status === 403) return new AiError('auth_expired', message);
+  // How Anthropic refuses a subscription token outside Claude Code (spec §8.3: "sign-in stopped working").
+  if (status === 400 && /only authorized for use with Claude Code/i.test(body)) return new AiError('auth_expired', message);
   // Claude subscriptions report an exhausted plan as a 400 rather than a 429.
   if (status === 400 && /extra usage/i.test(body)) return new AiError('quota_exceeded', message);
   if (status === 429) {
@@ -75,6 +79,18 @@ export function mapHttpError(status: number, body: string, headers: Headers): Ai
     return new AiError(isQuota ? 'quota_exceeded' : 'rate_limited', message, resetAt);
   }
   return new AiError('provider_error', message);
+}
+
+// React Native's fetch never gives up on a silent connection (its timeouts are 0 = forever), and the queue runs one
+// save at a time, so a single stalled AI request would hold every later save. This wrapper aborts a request after
+// `ms`; the abort rejects the fetch (or the body read), which postJson reports as AiError('network') and retries.
+// The timer is not cleared when headers arrive, so a body that stops streaming is cut off too.
+export function withTimeout(http: Http, ms: number): Http {
+  return (input, init) => {
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), ms);
+    return http(input, { ...init, signal: controller.signal });
+  };
 }
 
 // Shared by all providers: a network failure becomes AiError('network'), a non-2xx becomes mapHttpError.
