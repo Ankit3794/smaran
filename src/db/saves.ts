@@ -16,6 +16,11 @@ export interface SaveRow {
 // A `partial` save that already has a summary was enriched from whatever text existed: nothing left to do.
 const UNFINISHED = `(status IN ('fetching', 'waiting_ai') OR (status = 'partial' AND summary IS NULL))`;
 
+// Whether "Retry AI" can do anything for this save: the same rule as UNFINISHED, minus saves still being fetched.
+export function canRetryAi(save: Pick<Save, 'status' | 'summary'>): boolean {
+  return save.status === 'waiting_ai' || (save.status === 'partial' && save.summary === null);
+}
+
 export const SELECT_SAVE = `SELECT s.*, t.name AS topic_name, t.color AS topic_color
   FROM saves s LEFT JOIN topics t ON t.id = s.topic_id`;
 

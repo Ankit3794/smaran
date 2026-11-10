@@ -7,7 +7,7 @@ import * as Clipboard from 'expo-clipboard';
 import { savedAtLabel } from '@/core/dates';
 import type { Save, Source } from '@/core/types';
 import { useDb } from '@/db/DbProvider';
-import { deleteSave, getSave, markOpened, retrySave, setTags, setTopic, updateNote } from '@/db/saves';
+import { canRetryAi, deleteSave, getSave, markOpened, retrySave, setTags, setTopic, updateNote } from '@/db/saves';
 import { resolveTopic } from '@/db/topics';
 import { runQueueNow } from '@/pipeline/runNow';
 import { useReloadOnChange } from '@/ui/hooks/useReloadOnChange';
@@ -52,28 +52,41 @@ export function SaveSheet({ saveId, onClose }: Props) {
   if (save === null) return null;
   const currentSave = save;
 
+  // Database writes can fail (disk full, row deleted elsewhere); the screen just keeps showing the last good data.
+  async function attempt(work: () => Promise<unknown>) {
+    try {
+      await work();
+    } catch {
+      // Nothing useful to tell the user; the reload below shows what is actually stored.
+    }
+    reload();
+  }
+
   async function open() {
     if (currentSave.url === null) return;
-    await Linking.openURL(currentSave.url);
-    await markOpened(db, currentSave.id, Date.now());
-    reload();
+    await attempt(async () => {
+      // If the link cannot be opened this throws, so the save is not marked as opened.
+      await Linking.openURL(currentSave.url ?? '');
+      await markOpened(db, currentSave.id, Date.now());
+    });
   }
 
   async function saveNote() {
-    const note = noteDraft.trim();
-    await updateNote(db, currentSave.id, note === '' ? null : note);
-    reload();
+    const note = noteDraft.trim() === '' ? null : noteDraft.trim();
+    if (note === currentSave.note) return;
+    await attempt(() => updateNote(db, currentSave.id, note));
   }
 
-  async function changeTags(tags: string[]) {
-    await setTags(db, currentSave.id, tags);
-    reload();
+  // Closing while the note box is focused may not fire blur first, so save the note here too.
+  async function closeSheet() {
+    await saveNote();
+    onClose();
   }
 
-  async function changeTopic(topicName: string) {
-    await setTopic(db, currentSave.id, await resolveTopic(db, topicName, Date.now()));
-    reload();
-  }
+  const changeTags = (tags: string[]) => attempt(() => setTags(db, currentSave.id, tags));
+  const changeTopic = (topicName: string) =>
+    attempt(async () => setTopic(db, currentSave.id, await resolveTopic(db, topicName, Date.now())));
+  const copyLink = () => attempt(() => Clipboard.setStringAsync(currentSave.url ?? ''));
 
   function confirmDelete() {
     Alert.alert('Delete this save?', 'It will be removed from Smaran. The original link is not affected.', [
@@ -82,7 +95,7 @@ export function SaveSheet({ saveId, onClose }: Props) {
         text: 'Delete',
         style: 'destructive',
         onPress: async () => {
-          await deleteSave(db, currentSave.id);
+          await attempt(() => deleteSave(db, currentSave.id));
           onClose();
         },
       },
@@ -90,20 +103,20 @@ export function SaveSheet({ saveId, onClose }: Props) {
   }
 
   async function retryAi() {
-    await retrySave(db, currentSave.id);
-    // The run records its own failures on the save; ignoring the rejection avoids an unhandled promise rejection.
-    await runQueueNow(db).catch(() => {});
-    reload();
+    // The run records its own failures on the save; catching here avoids an unhandled promise rejection.
+    await attempt(async () => {
+      await retrySave(db, currentSave.id);
+      await runQueueNow(db);
+    });
   }
 
-  const needsRetry = currentSave.status === 'partial' || (currentSave.status === 'waiting_ai' && currentSave.statusReason !== null);
   const heading = currentSave.summary || currentSave.title || currentSave.url || currentSave.sharedText;
   const muted = { fontFamily: fonts.body, fontSize: 11.5, color: colors.muted };
 
   return (
-    <Modal animationType="slide" transparent visible onRequestClose={onClose}>
+    <Modal animationType="slide" transparent visible onRequestClose={closeSheet}>
       <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(30,25,20,0.45)' }}>
-        <Pressable accessibilityLabel="Close details" style={{ flex: 1 }} onPress={onClose} />
+        <Pressable accessibilityLabel="Close details" style={{ flex: 1 }} onPress={closeSheet} />
         <ScrollView
           style={{ maxHeight: '88%', flexGrow: 0, backgroundColor: colors.background, borderTopLeftRadius: 22, borderTopRightRadius: 22 }}
           contentContainerStyle={{ padding: 16, paddingBottom: 24, gap: 10 }}
@@ -138,10 +151,10 @@ export function SaveSheet({ saveId, onClose }: Props) {
                 <Button label={openButtonLabel(currentSave.source)} onPress={open} />
               </View>
             )}
-            {currentSave.url !== null && <Button label="Copy link" variant="secondary" onPress={() => Clipboard.setStringAsync(currentSave.url ?? '')} />}
+            {currentSave.url !== null && <Button label="Copy link" variant="secondary" onPress={copyLink} />}
             <Button label="Delete" variant="secondary" onPress={confirmDelete} />
           </View>
-          {needsRetry && <Button label="Retry AI" variant="secondary" onPress={retryAi} />}
+          {canRetryAi(currentSave) && <Button label="Retry AI" variant="secondary" onPress={retryAi} />}
         </ScrollView>
       </View>
     </Modal>

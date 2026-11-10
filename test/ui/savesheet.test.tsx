@@ -8,7 +8,6 @@ import { migrate } from '@/db/migrate';
 import { applyEnrichment, createOrBumpSave, getSave, setStatus } from '@/db/saves';
 import { runQueueNow } from '@/pipeline/runNow';
 import { SaveSheet } from '@/ui/components/SaveSheet';
-import { savedAtLabel } from '@/core/dates';
 import { openTestDb } from '../helpers/sqlite';
 import type { Db } from '@/db/db';
 
@@ -17,7 +16,9 @@ jest.mock('expo-sqlite', () => ({ addDatabaseChangeListener: () => ({ remove: je
 jest.mock('expo-clipboard', () => ({ setStringAsync: jest.fn() }));
 jest.mock('@/pipeline/runNow', () => ({ runQueueNow: jest.fn() }));
 
-const savedAt = new Date(2026, 10, 9, 23, 42).getTime();
+// Always "yesterday, 11:42 PM" relative to the real clock, so the test can pin the literal text.
+const today = new Date();
+const savedAt = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1, 23, 42).getTime();
 
 async function seed(source: 'x' | 'web' = 'x') {
   const db = openTestDb();
@@ -50,7 +51,7 @@ it('shows summary, brief, time line, topic and tags', async () => {
   const { db, id } = await seed();
   await renderSheet(db, id);
   expect(screen.getByText('A scanner for unusual flow.')).toBeOnTheScreen();
-  expect(screen.getByText(`saved ${savedAtLabel(savedAt, Date.now())}`)).toBeOnTheScreen();
+  expect(screen.getByText('saved yesterday, 11:42 PM')).toBeOnTheScreen();
   expect(screen.getByText('● Trading')).toBeOnTheScreen();
   expect(screen.getByText('options')).toBeOnTheScreen();
   expect(screen.getByText('tools')).toBeOnTheScreen();
@@ -132,18 +133,48 @@ it('asks before deleting, then deletes and closes', async () => {
   expect(onClose).toHaveBeenCalled();
 });
 
-it('offers Retry AI only for a failed save, and it resets the retry time and runs the queue', async () => {
+it('hides Retry AI for a healthy save', async () => {
   const { db, id } = await seed();
   await renderSheet(db, id);
   expect(screen.queryByText('Retry AI')).toBeNull();
 });
 
-it('Retry AI clears the backoff and runs the queue, even if the run rejects', async () => {
+it('hides Retry AI for a partial save with a summary (the queue would never pick it up)', async () => {
   const { db, id } = await seed();
+  await setStatus(db, id, 'partial', 'fetch_failed', null, null, 0);
+  await renderSheet(db, id);
+  expect(screen.queryByText('Retry AI')).toBeNull();
+});
+
+it('Retry AI on a partial save without a summary clears the backoff and runs the queue, even if the run rejects', async () => {
+  const { db, id } = await seed();
+  await db.runAsync('UPDATE saves SET summary = NULL, title = ? WHERE id = ?', 'Some title', id);
   await setStatus(db, id, 'partial', 'provider_error', null, Date.now() + 1e9, 2);
   (runQueueNow as jest.Mock).mockRejectedValue(new Error('offline'));
-  await renderSheet(db, id);
-  await fireEvent.press(screen.getByText('Retry AI'));
+  await render(
+    <DbContext.Provider value={db}>
+      <SaveSheet saveId={id} onClose={jest.fn()} />
+    </DbContext.Provider>,
+  );
+  await fireEvent.press(await screen.findByText('Retry AI'));
   await waitFor(() => expect(runQueueNow).toHaveBeenCalledWith(db));
   expect(await getSave(db, id)).toMatchObject({ nextRetryAt: null, attempts: 0 });
+});
+
+it('saves the typed note when the sheet is closed without blurring the box', async () => {
+  const { db, id } = await seed();
+  const onClose = await renderSheet(db, id);
+  await fireEvent.changeText(screen.getByPlaceholderText('Add a note'), 'typed then closed');
+  await fireEvent.press(screen.getByLabelText('Close details'));
+  await waitFor(() => expect(onClose).toHaveBeenCalled());
+  expect((await getSave(db, id))?.note).toBe('typed then closed');
+});
+
+it('does not mark the save opened when the link cannot be opened', async () => {
+  const { db, id } = await seed();
+  (Linking.openURL as jest.Mock).mockRejectedValue(new Error('no handler'));
+  await renderSheet(db, id);
+  await fireEvent.press(screen.getByText('Open on X ↗'));
+  await waitFor(() => expect(Linking.openURL).toHaveBeenCalled());
+  expect((await getSave(db, id))?.openedAt).toBeNull();
 });
