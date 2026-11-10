@@ -135,14 +135,20 @@ async function replaceTags(db: Db, saveId: number, tags: string[]): Promise<void
   }
 }
 
-export async function applyEnrichment(db: Db, id: number, enrichment: Enrichment, now: number): Promise<void> {
+// `finalStatus` is 'partial' for saves whose page could not be fetched: they keep that status and its fetch_failed
+// reason (set in the same statement, so there is no moment where they look fully done).
+export async function applyEnrichment(
+  db: Db, id: number, enrichment: Enrichment, now: number, finalStatus: 'done' | 'partial' = 'done',
+): Promise<void> {
   // Resolved before the transaction opens: the transaction API does not nest.
   const topicId = await resolveTopic(db, enrichment.topic, now);
   await db.withTransactionAsync(async () => {
     await db.runAsync(
-      `UPDATE saves SET summary = ?, brief = ?, topic_id = ?, status = 'done', status_reason = NULL, status_detail = NULL,
+      `UPDATE saves SET summary = ?, brief = ?, topic_id = ?, status = ?,
+         status_reason = CASE WHEN ? = 'partial' THEN 'fetch_failed' ELSE NULL END,
+         status_detail = CASE WHEN ? = 'partial' THEN status_detail ELSE NULL END,
          next_retry_at = NULL, lease_until = NULL WHERE id = ?`,
-      enrichment.summary, enrichment.brief, topicId, id,
+      enrichment.summary, enrichment.brief, topicId, finalStatus, finalStatus, finalStatus, id,
     );
     await replaceTags(db, id, enrichment.tags);
   });
@@ -187,6 +193,7 @@ export async function claimDue(db: Db, now: number, leaseMs: number, limit: numb
      WHERE id IN (
        SELECT id FROM saves
        WHERE ${UNFINISHED}
+         AND (status_reason IS NULL OR status_reason NOT IN ('not_connected', 'auth_expired'))
          AND (next_retry_at IS NULL OR next_retry_at <= ?)
          AND (lease_until IS NULL OR lease_until <= ?)
        ORDER BY last_saved_at, id LIMIT ?)
@@ -195,6 +202,13 @@ export async function claimDue(db: Db, now: number, leaseMs: number, limit: numb
   );
   // RETURNING does not promise row order, so restore the oldest-first order here.
   return claimed.sort((a, b) => a.last_saved_at - b.last_saved_at || a.id - b.id).map((row) => row.id);
+}
+
+// not_connected / auth_expired saves are skipped by claimDue until something fixes the cause (a provider was connected
+// or the user signed in again); clearing their reason makes them due again. Without this they would be re-claimed every run.
+export async function rearmWaitingAi(db: Db, reasons: Array<'not_connected' | 'auth_expired'>): Promise<void> {
+  const placeholders = reasons.map(() => '?').join(', ');
+  await db.runAsync(`UPDATE saves SET status_reason = NULL WHERE status_reason IN (${placeholders}) AND status != 'done'`, reasons);
 }
 
 export async function queueSummary(db: Db): Promise<{ waiting: number; reason: StatusReason; nextRetryAt: number | null }> {

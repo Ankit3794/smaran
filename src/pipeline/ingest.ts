@@ -40,7 +40,11 @@ export async function ingestInbox(db: Db, now: number): Promise<{ saveIds: numbe
   const pending = await db.getAllAsync<InboxRow>('SELECT * FROM share_inbox WHERE ingested = 0 ORDER BY id');
   for (const row of pending) {
     if (row.undone === 1) {
-      await db.runAsync('DELETE FROM share_inbox WHERE id = ?', row.id);
+      // The save may exist already if the app died after creating it but before marking the row ingested.
+      await db.withTransactionAsync(async () => {
+        await db.runAsync('DELETE FROM saves WHERE inbox_id = ?', row.id);
+        await db.runAsync('DELETE FROM share_inbox WHERE id = ?', row.id);
+      });
       continue;
     }
     // createOrBumpSave opens its own transaction (they do not nest), and it is safe to repeat for the same inbox id,

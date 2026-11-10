@@ -1,6 +1,6 @@
 // Runs the whole pipeline once: ingest new shares, then work through every save that is due.
 // Called from the app foreground, the share activity and the background task; at most one run at a time.
-import { claimDue } from '@/db/saves';
+import { claimDue, rearmWaitingAi } from '@/db/saves';
 import { ingestInbox } from './ingest';
 import { processSave, type PipelineDeps } from './process';
 
@@ -23,22 +23,19 @@ async function runOnce(deps: PipelineDeps, maxMs: number): Promise<{ processed: 
   const outOfTime = () => deps.now() - startedAt >= maxMs;
   await ingestInbox(deps.db, startedAt);
 
-  // A save that ends a step with no retry time (e.g. not_connected) is immediately due again,
-  // so remember what this run already handled or the loop would never end.
-  const handled = new Set<number>();
+  // Saves waiting on "not connected" are skipped by claimDue; once a provider exists they may run again.
+  if ((await deps.ai()) !== null) await rearmWaitingAi(deps.db, ['not_connected']);
+
+  let processed = 0;
   while (!outOfTime()) {
     const claimed = await claimDue(deps.db, deps.now(), LEASE_MS, BATCH_SIZE);
-    const fresh = claimed.filter((id) => !handled.has(id));
-    for (const id of claimed.filter((claimedId) => handled.has(claimedId))) {
-      await deps.db.runAsync('UPDATE saves SET lease_until = NULL WHERE id = ?', id);
-    }
-    if (fresh.length === 0) break;
-    for (const id of fresh) {
+    if (claimed.length === 0) break;
+    for (const id of claimed) {
       if (outOfTime()) {
         await deps.db.runAsync('UPDATE saves SET lease_until = NULL WHERE id = ?', id);
         continue;
       }
-      handled.add(id);
+      processed += 1;
       try {
         await processSave(id, deps);
       } catch {
@@ -46,5 +43,5 @@ async function runOnce(deps: PipelineDeps, maxMs: number): Promise<{ processed: 
       }
     }
   }
-  return { processed: handled.size };
+  return { processed };
 }

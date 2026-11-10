@@ -2,7 +2,7 @@
 // Uses a real SQLite schema with fake extractors, AI and thumbnails so only pipeline logic is under test.
 import { openTestDb } from '../helpers/sqlite';
 import { migrate } from '@/db/migrate';
-import { getSave } from '@/db/saves';
+import { claimDue, getSave } from '@/db/saves';
 import { ingestInbox } from '@/pipeline/ingest';
 import { processSave, type PipelineDeps } from '@/pipeline/process';
 import { runQueue } from '@/pipeline/queue';
@@ -141,7 +141,7 @@ describe('processSave', () => {
     await processSave(saveIds[0], deps);
     expect(await getSave(db, saveIds[0])).toMatchObject({ attempts: 2, nextRetryAt: NOW + 300e3 });
     await processSave(saveIds[0], deps);
-    expect(await getSave(db, saveIds[0])).toMatchObject({ status: 'partial', statusReason: 'fetch_failed', attempts: 3, topicName: 'Trading' });
+    expect(await getSave(db, saveIds[0])).toMatchObject({ status: 'partial', statusReason: 'fetch_failed', attempts: 0, topicName: 'Trading' });
     expect(prompts[0]).toContain('cool article');
   });
 
@@ -254,5 +254,55 @@ describe('runQueue', () => {
     const second = runQueue(deps, { maxMs: 1000 });
     expect(second).toBe(first);
     await first;
+  });
+});
+
+describe('fix round: starvation, undo window, partial enrichment', () => {
+  it('fetches all seven shares with no provider, then enriches them once one is connected', async () => {
+    const db = await freshDb();
+    for (let n = 0; n < 7; n++) await addInbox(db, `https://example.com/${n}`);
+    const noProvider = makeDeps(db, { ai: async () => null }).deps;
+    await runQueue(noProvider, { maxMs: 10_000 });
+    await runQueue(noProvider, { maxMs: 10_000 });
+    const waiting = await db.getAllAsync<{ title: string | null; status: string; status_reason: string }>('SELECT title, status, status_reason FROM saves');
+    expect(waiting).toHaveLength(7);
+    for (const row of waiting) expect(row).toMatchObject({ title: 'Hello', status: 'waiting_ai', status_reason: 'not_connected' });
+
+    await runQueue(makeDeps(db).deps, { maxMs: 10_000 });
+    const statuses = await db.getAllAsync<{ status: string }>('SELECT status FROM saves');
+    expect(statuses.every((row) => row.status === 'done')).toBe(true);
+  });
+
+  it('deletes a save created before the app died when the share was undone', async () => {
+    const db = await freshDb();
+    const inboxId = await addInbox(db, 'https://example.com/a');
+    await ingestInbox(db, NOW);
+    await db.runAsync('UPDATE share_inbox SET ingested = 0, undone = 1 WHERE id = ?', inboxId);
+    await ingestInbox(db, NOW);
+    expect(await db.getAllAsync('SELECT id FROM saves')).toHaveLength(0);
+  });
+
+  it('keeps a partial save partial after enrichment and does not claim it again', async () => {
+    const db = await freshDb();
+    await addInbox(db, 'https://example.com/gone');
+    const { saveIds } = await ingestInbox(db, NOW);
+    mockExtract = async () => { throw new ExtractError('not_found', '404'); };
+    await processSave(saveIds[0], makeDeps(db).deps);
+    expect(await getSave(db, saveIds[0])).toMatchObject({ status: 'partial', statusReason: 'fetch_failed', statusDetail: '404' });
+    expect(await claimDue(db, NOW + 1e9, 1000, 5)).toEqual([]);
+  });
+
+  it('waits one minute for an AI retry after a successful fetch that followed failed fetches', async () => {
+    const db = await freshDb();
+    await addInbox(db, 'https://example.com/a');
+    const { saveIds } = await ingestInbox(db, NOW);
+    mockExtract = async () => { throw new ExtractError('network', 'down'); };
+    const failing = makeDeps(db).deps;
+    await processSave(saveIds[0], failing);
+    await processSave(saveIds[0], failing);
+    mockExtract = async () => ({ title: 'Hello', text: 'x' });
+    const ai: PipelineDeps['ai'] = async () => ({ provider: { id: 'claude-key', generateText: async () => 'not json' }, model: 'm' });
+    await processSave(saveIds[0], makeDeps(db, { ai }).deps);
+    expect(await getSave(db, saveIds[0])).toMatchObject({ statusReason: 'provider_error', nextRetryAt: NOW + 60e3, attempts: 1 });
   });
 });

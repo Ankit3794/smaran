@@ -67,17 +67,18 @@ async function fetchStep(save: Save, deps: PipelineDeps): Promise<'ok' | 'partia
     // A broken thumbnail must not fail the save, so any error here just means "no thumbnail".
     const thumbPath = extracted.imageUrl ? await deps.thumbs.download(extracted.imageUrl, save.id).catch(() => null) : null;
     await updateFetched(deps.db, save.id, { ...extracted, thumbPath });
-    await setStatus(deps.db, save.id, 'waiting_ai', null, null, null, 0);
+    // Attempts so far were fetch attempts; the AI step's retry schedule starts fresh from one minute.
+    await setStatus(deps.db, save.id, 'waiting_ai', null, null, null, -save.attempts);
     return 'ok';
   } catch (error) {
     // A missing page will not come back, so retrying is pointless. Anything else (network, blocked, bugs) is retried.
     if (error instanceof ExtractError && error.kind === 'not_found') {
-      await setStatus(deps.db, save.id, 'partial', 'fetch_failed', error.message, null, 1);
+      await setStatus(deps.db, save.id, 'partial', 'fetch_failed', error.message, null, -save.attempts);
       return 'partial';
     }
     const failedAttempts = save.attempts + 1;
     if (failedAttempts >= MAX_FETCH_ATTEMPTS) {
-      await setStatus(deps.db, save.id, 'partial', 'fetch_failed', describeError(error), null, 1);
+      await setStatus(deps.db, save.id, 'partial', 'fetch_failed', describeError(error), null, -save.attempts);
       return 'partial';
     }
     // The delay is looked up with the attempts made before this failure, so the first retry waits one minute.
@@ -124,8 +125,7 @@ async function aiStep(id: number, isPartial: boolean, deps: PipelineDeps): Promi
       topics,
       tags,
     });
-    await applyEnrichment(deps.db, id, enrichment, now);
-    if (isPartial) await setStatus(deps.db, id, 'partial', 'fetch_failed', null, null, 0);
+    await applyEnrichment(deps.db, id, enrichment, now, isPartial ? 'partial' : 'done');
   } catch (error) {
     const detail = describeError(error);
     const scheduledRetry = now + nextRetryDelay(save.attempts);

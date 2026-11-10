@@ -8,6 +8,7 @@ import { claudeExchange } from '@/ai/auth/claudeOAuth';
 import { codexPoll, codexStartDevice } from '@/ai/auth/codexOAuth';
 import { saveCredential } from '@/ai/credentials';
 import { setSetting } from '@/db/settings';
+import { rearmWaitingAi } from '@/db/saves';
 import type { Db } from '@/db/db';
 
 const mockReplace = jest.fn();
@@ -28,6 +29,7 @@ jest.mock('@/ai/auth/googleOAuth', () => ({ googleAuthUrl: () => 'https://accoun
 jest.mock('@/ai/providers/codeAssist', () => ({ codeAssistSetup: jest.fn() }));
 jest.mock('@/ai/credentials', () => ({ saveCredential: jest.fn() }));
 jest.mock('@/db/settings', () => ({ setSetting: jest.fn() }));
+jest.mock('@/db/saves', () => ({ rearmWaitingAi: jest.fn() }));
 
 const fakeDb = {} as Db;
 const tokens = { accessToken: 'access', refreshToken: 'refresh', expiresAt: 1 };
@@ -65,6 +67,7 @@ test('claude: Connect exchanges the code, stores the credential and goes home', 
   expect(claudeExchange).toHaveBeenCalledWith(expect.anything(), 'abc#state123', expect.objectContaining({ state: 'state123' }));
   expect(saveCredential).toHaveBeenCalledWith('claude-sub', { kind: 'oauth', tokens });
   expect(setSetting).toHaveBeenCalledWith(fakeDb, 'activeProvider', 'claude-sub');
+  expect(rearmWaitingAi).toHaveBeenCalledWith(fakeDb, ['not_connected', 'auth_expired']);
 });
 
 test('chatgpt: shows the device code and a waiting state', async () => {
