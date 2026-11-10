@@ -41,6 +41,38 @@ describe('createOrBumpSave', () => {
     expect((await getSave(db, first.id))?.lastSavedAt).toBe(100);
   });
 
+  it('adds a note to an existing save when its inbox row is ingested again with one', async () => {
+    const db = await freshDb();
+    const first = await createOrBumpSave(db, webInput);
+    // The share card's "Add a note" stores the note on the inbox row, so the same row comes back with it.
+    await createOrBumpSave(db, { ...webInput, note: 'read later', now: 900 });
+    const save = await getSave(db, first.id);
+    expect(save?.note).toBe('read later');
+    expect(save?.lastSavedAt).toBe(100);
+  });
+
+  it('adds a note from a re-share to the save that already has the url', async () => {
+    const db = await freshDb();
+    const first = await createOrBumpSave(db, webInput);
+    await createOrBumpSave(db, { ...webInput, inboxId: 2, note: 'still relevant', now: 500 });
+    expect((await getSave(db, first.id))?.note).toBe('still relevant');
+  });
+
+  it('appends a new note after a blank line, and never appends the same note twice', async () => {
+    const db = await freshDb();
+    const first = await createOrBumpSave(db, { ...webInput, note: 'first thought' });
+    await createOrBumpSave(db, { ...webInput, inboxId: 2, note: 'second thought', now: 500 });
+    await createOrBumpSave(db, { ...webInput, inboxId: 2, note: 'second thought', now: 600 });
+    expect((await getSave(db, first.id))?.note).toBe('first thought\n\nsecond thought');
+  });
+
+  it('keeps the existing note when a duplicate share has none', async () => {
+    const db = await freshDb();
+    const first = await createOrBumpSave(db, { ...webInput, note: 'mine' });
+    await createOrBumpSave(db, { ...webInput, inboxId: 2, note: null, now: 500 });
+    expect((await getSave(db, first.id))?.note).toBe('mine');
+  });
+
   it('never dedupes text saves from different inbox rows', async () => {
     const db = await freshDb();
     const a = await createOrBumpSave(db, { ...webInput, inboxId: 1, url: null, canonicalUrl: null, source: 'text' });

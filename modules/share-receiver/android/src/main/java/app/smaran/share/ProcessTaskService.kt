@@ -1,5 +1,6 @@
 // Runs the "SmaranProcess" JS task (registered in src/pipeline/headless.ts) without opening any screen.
 // ShareActivity starts this service right after it writes to share_inbox, so a share is summarised in the background.
+// It runs in the main app process (where the JS runtime lives); ShareActivity runs in its own ":share" process.
 // Headless JS is React Native's way to run app JavaScript from native code, even when the app was closed.
 package app.smaran.share
 
@@ -16,7 +17,8 @@ class ProcessTaskService : HeadlessJsTaskService() {
           Arguments.createMap(),
           // The JS side stops itself after 25 s (src/pipeline/runNow.ts); this is the hard stop just after it.
           30_000,
-          // Allowed while the app is open too: the share card itself is in the foreground when it starts us.
+          // Allowed while the app is open too: Smaran can be on screen when a share arrives (split screen, or
+          // sharing from inside the app), and the share still has to be processed.
           true,
       )
 }

@@ -22,6 +22,12 @@ const shareActivity = {
     // Handle rotation and similar changes in place: recreating the activity would save the share twice.
     'android:configChanges': 'orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|uiMode|density',
     'android:windowSoftInputMode': 'adjustResize',
+    // Its own process, so this screen's SQLite (Android's built-in copy) never shares a process with expo-sqlite's
+    // bundled copy, which the app and its background task keep open on the same smaran.db. SQLite's file locks are
+    // POSIX locks owned by the whole process: when one library closes the file, the kernel drops the other library's
+    // locks too, which SQLite documents as a way to corrupt a database ("How To Corrupt An SQLite Database File",
+    // section 2.2.1). Across processes those locks work as designed. ProcessTaskService stays in the main process.
+    'android:process': ':share',
   },
   'intent-filter': [
     {
@@ -34,6 +40,8 @@ const shareActivity = {
 };
 
 // Started by ShareActivity; runs the "SmaranProcess" Headless JS task. Not exported: only this app may start it.
+// No android:process, so it runs in the main app process with the JS runtime; ShareActivity starts it from the
+// ":share" process with an explicit Intent, which Android delivers across processes of the same app.
 const processService = { $: { 'android:name': PROCESS_SERVICE, 'android:exported': 'false' } };
 
 function withShareReceiver(config) {

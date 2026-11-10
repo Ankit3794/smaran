@@ -1,11 +1,12 @@
 // The share target: Share -> Smaran in any app opens this small, see-through screen on top of that app.
 // It writes the share to share_inbox (ShareInboxDb.kt), starts background processing (ProcessTaskService.kt),
 // shows the confirmation card for 1.5 s and closes, so the user never leaves the app they were in.
-// The manifest entry (translucent theme, intent filter) is added by plugin/withShareReceiver.js.
+// The manifest entry (translucent theme, intent filter, its own ":share" process) is added by plugin/withShareReceiver.js.
 package app.smaran.share
 
 import android.app.Activity
 import android.content.Intent
+import android.database.sqlite.SQLiteException
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -19,6 +20,7 @@ import androidx.core.view.WindowInsetsCompat
 
 private const val CARD_VISIBLE_MS = 1500L
 private const val REMOVED_VISIBLE_MS = 800L
+private const val ERROR_VISIBLE_MS = 2000L
 
 // Android requires an Activity subclass for anything shown on screen; the logic lives in small methods below.
 class ShareActivity : Activity() {
@@ -55,10 +57,17 @@ class ShareActivity : Activity() {
       return
     }
 
-    val alreadySaved = isAlreadySaved(this, sharedText)
-    // On the main thread on purpose: it is one tiny local write, and it must be done before the card says "Saved".
-    // referrer is the app the user shared from, e.g. "com.twitter.android".
-    inboxId = insertShare(this, sharedText, referrer?.host)
+    val alreadySaved: Boolean
+    try {
+      alreadySaved = isAlreadySaved(this, sharedText)
+      // On the main thread on purpose: it is one tiny local write, and it must be done before the card says "Saved".
+      // referrer is the app the user shared from, e.g. "com.twitter.android".
+      inboxId = insertShare(this, sharedText, referrer?.host)
+    } catch (error: SQLiteException) {
+      // A full disk, or the database stayed locked past Android's wait: say so instead of crashing over the other app.
+      showErrorAndFinish("Couldn't save — try again")
+      return
+    }
     startBackgroundProcessing()
     if (alreadySaved) showMessage("Already saved, moved to today")
 
@@ -91,7 +100,12 @@ class ShareActivity : Activity() {
 
   private fun undo() {
     handler.removeCallbacks(finishLater)
-    inboxId?.let { markUndone(this, it) }
+    try {
+      inboxId?.let { markUndone(this, it) }
+    } catch (error: SQLiteException) {
+      showErrorAndFinish("Couldn't undo — remove it in Smaran")
+      return
+    }
     // Run the queue again so ingest removes the row (and the save, if it was already created).
     startBackgroundProcessing()
     showMessage("Removed")
@@ -116,10 +130,26 @@ class ShareActivity : Activity() {
     val note = noteInput.text.toString().trim()
     val id = inboxId
     if (note.isNotEmpty() && id != null) {
-      saveNote(this, id, note)
+      try {
+        saveNote(this, id, note)
+      } catch (error: SQLiteException) {
+        showErrorAndFinish("Couldn't save the note — add it in Smaran")
+        return
+      }
       startBackgroundProcessing()
     }
     finish()
+  }
+
+  // Database failures end here: a short message on the card, then the card closes by itself.
+  private fun showErrorAndFinish(title: String) {
+    handler.removeCallbacks(finishLater)
+    showMessage(title)
+    hideButtons()
+    getSystemService(InputMethodManager::class.java).hideSoftInputFromWindow(noteInput.windowToken, 0)
+    noteInput.visibility = View.GONE
+    findViewById<View>(R.id.share_save_note).visibility = View.GONE
+    handler.postDelayed(finishLater, ERROR_VISIBLE_MS)
   }
 
   private fun showMessage(title: String) {

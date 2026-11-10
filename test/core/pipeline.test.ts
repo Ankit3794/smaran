@@ -80,6 +80,43 @@ describe('ingestInbox', () => {
     expect((await db.getAllAsync('SELECT id FROM saves')).length).toBe(1);
   });
 
+  // What the share card's "Add a note" does (saveNote in ShareInboxDb.kt): it never writes to saves itself.
+  async function addNoteLikeShareCard(db: Awaited<ReturnType<typeof freshDb>>, inboxId: number, note: string) {
+    await db.runAsync('UPDATE share_inbox SET note = ?, ingested = 0 WHERE id = ?', note, inboxId);
+  }
+
+  it('copies a note added after ingestion onto the save and marks the row ingested again', async () => {
+    const db = await freshDb();
+    const inboxId = await addInbox(db, 'https://example.com/a');
+    const { saveIds } = await ingestInbox(db, NOW);
+    await addNoteLikeShareCard(db, inboxId, 'for the weekend');
+    await ingestInbox(db, NOW + 5000);
+    expect(await db.getAllAsync('SELECT id, note FROM saves')).toEqual([{ id: saveIds[0], note: 'for the weekend' }]);
+    expect(await db.getFirstAsync('SELECT ingested FROM share_inbox WHERE id = ?', inboxId)).toEqual({ ingested: 1 });
+  });
+
+  it('copies a note from an "Already saved" share onto the existing save', async () => {
+    const db = await freshDb();
+    await addInbox(db, 'https://example.com/a');
+    await ingestInbox(db, NOW);
+    const reshareId = await addInbox(db, 'again https://example.com/a');
+    await ingestInbox(db, NOW + 1000);
+    await addNoteLikeShareCard(db, reshareId, 'second look');
+    await ingestInbox(db, NOW + 2000);
+    expect(await db.getAllAsync('SELECT note FROM saves')).toEqual([{ note: 'second look' }]);
+  });
+
+  it('does not append the note twice when the noted row is ingested again', async () => {
+    const db = await freshDb();
+    const inboxId = await addInbox(db, 'https://example.com/a');
+    await ingestInbox(db, NOW);
+    await addNoteLikeShareCard(db, inboxId, 'once');
+    await ingestInbox(db, NOW);
+    await db.runAsync('UPDATE share_inbox SET ingested = 0 WHERE id = ?', inboxId); // as if the app died before marking it
+    await ingestInbox(db, NOW);
+    expect(await db.getAllAsync('SELECT note FROM saves')).toEqual([{ note: 'once' }]);
+  });
+
   it('makes no save when the share was undone before ingestion', async () => {
     const db = await freshDb();
     await addInbox(db, 'https://example.com/a', { undone: 1 });

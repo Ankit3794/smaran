@@ -49,6 +49,8 @@ export async function ingestInbox(db: Db, now: number): Promise<{ saveIds: numbe
     }
     // createOrBumpSave opens its own transaction (they do not nest), and it is safe to repeat for the same inbox id,
     // so if the app dies before the row is marked ingested, the next run finds the existing save instead of duplicating it.
+    // The share card's "Add a note" also sets ingested = 0 on purpose (ShareInboxDb.kt saveNote): the repeat run
+    // copies the note onto the save, and the row is marked ingested again below.
     const link = parseSharedLink(row.shared_text);
     const { id } = await createOrBumpSave(db, {
       inboxId: row.id,

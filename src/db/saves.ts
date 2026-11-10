@@ -24,24 +24,42 @@ export function canRetryAi(save: Pick<Save, 'status' | 'summary'>): boolean {
 export const SELECT_SAVE = `SELECT s.*, t.name AS topic_name, t.color AS topic_color
   FROM saves s LEFT JOIN topics t ON t.id = s.topic_id`;
 
+// A note can reach a save that already exists: the share card's "Add a note" stores it on the inbox row, which is
+// then ingested again, and a note typed on an "Already saved" card belongs to the older save. The native side cannot
+// write saves.note itself (Android's built-in SQLite lacks FTS5, which the saves triggers need), so it arrives here.
+// Returns the note to store, or null when the save's note should stay as it is.
+function mergeNote(existing: string | null, added: string | null): string | null {
+  if (added === null || added.trim() === '') return null;
+  if (existing === null || existing.trim() === '') return added;
+  // Re-ingesting the same row brings the same note again; it must not be appended twice.
+  if (existing.includes(added)) return null;
+  return `${existing}\n\n${added}`;
+}
+
 export async function createOrBumpSave(
   db: Db,
   input: { inboxId: number | null; url: string | null; canonicalUrl: string | null; source: Source; sourceApp: string | null; sharedText: string; note: string | null; now: number },
 ): Promise<{ id: number; duplicate: boolean }> {
   let outcome = { id: 0, duplicate: false };
   await db.withTransactionAsync(async () => {
-    // The same share-inbox row can be ingested twice if the app is killed midway; it must not double-save.
+    // The same share-inbox row can be ingested twice: the app was killed midway, or a note was added after ingestion.
+    // It must not double-save; only a newly added note is copied over.
     if (input.inboxId !== null) {
-      const sameInbox = await db.getFirstAsync<{ id: number }>('SELECT id FROM saves WHERE inbox_id = ?', input.inboxId);
+      const sameInbox = await db.getFirstAsync<{ id: number; note: string | null }>('SELECT id, note FROM saves WHERE inbox_id = ?', input.inboxId);
       if (sameInbox) {
+        const note = mergeNote(sameInbox.note, input.note);
+        if (note !== null) await db.runAsync('UPDATE saves SET note = ? WHERE id = ?', note, sameInbox.id);
         outcome = { id: sameInbox.id, duplicate: true };
         return;
       }
     }
+    // A re-shared link moves the existing save to today (and picks up a note typed on the "Already saved" card).
+    // Ingesting that re-share again just sets last_saved_at to the later time; mergeNote keeps the note from repeating.
     if (input.canonicalUrl !== null) {
-      const sameUrl = await db.getFirstAsync<{ id: number }>('SELECT id FROM saves WHERE canonical_url = ?', input.canonicalUrl);
+      const sameUrl = await db.getFirstAsync<{ id: number; note: string | null }>('SELECT id, note FROM saves WHERE canonical_url = ?', input.canonicalUrl);
       if (sameUrl) {
-        await db.runAsync('UPDATE saves SET last_saved_at = ? WHERE id = ?', input.now, sameUrl.id);
+        const note = mergeNote(sameUrl.note, input.note);
+        await db.runAsync('UPDATE saves SET last_saved_at = ?, note = COALESCE(?, note) WHERE id = ?', input.now, note, sameUrl.id);
         outcome = { id: sameUrl.id, duplicate: true };
         return;
       }

@@ -1,6 +1,8 @@
 // Reads and writes the share_inbox table in the app's own SQLite file (the one expo-sqlite opens as "smaran.db").
 // First step of the data flow: share sheet -> ShareActivity -> share_inbox -> JS ingest (src/pipeline/ingest.ts) -> saves.
 // Every function opens the database, does one small job and closes it, so the file is never held open by this screen.
+// Only share_inbox is ever written here, never saves: this uses Android's built-in SQLite, which has no FTS5, and the
+// saves triggers (src/db/schema.ts) update an FTS5 table, so any write to saves would fail with "no such module: fts5".
 package app.smaran.share
 
 import android.content.ContentValues
@@ -59,7 +61,10 @@ fun insertShare(context: Context, sharedText: String, sourceApp: String?): Long 
       database.insertOrThrow("share_inbox", null, values)
     }
 
-/** True when the first link in the text is already a save. Ingest will bump that save to today instead of duplicating it. */
+/**
+ * True when the first link in the text is already a save. Ingest will bump that save to today instead of duplicating it.
+ * Only reads saves: reading never runs the FTS5 triggers, so it is safe with Android's SQLite.
+ */
 fun isAlreadySaved(context: Context, sharedText: String): Boolean {
   val url = extractFirstUrl(sharedText) ?: return false
   return openDatabase(context).use { database ->
@@ -76,12 +81,13 @@ fun markUndone(context: Context, inboxId: Long) {
   }
 }
 
-/** Stores the note on the inbox row, and on the save too in case ingest already turned the row into a save. */
+/**
+ * Stores the note on the inbox row only. Setting ingested = 0 makes the next ingest run see the row again, and
+ * createOrBumpSave (src/db/saves.ts) copies the note onto the save, whether that save came from this share or is an
+ * older save of the same link ("Already saved"). The caller restarts background processing so that run happens now.
+ */
 fun saveNote(context: Context, inboxId: Long, note: String) {
   openDatabase(context).use { database ->
-    database.execSQL("UPDATE share_inbox SET note = ? WHERE id = ?", arrayOf<Any>(note, inboxId))
-    if (tableExists(database, "saves")) {
-      database.execSQL("UPDATE saves SET note = ? WHERE inbox_id = ?", arrayOf<Any>(note, inboxId))
-    }
+    database.execSQL("UPDATE share_inbox SET note = ?, ingested = 0 WHERE id = ?", arrayOf<Any>(note, inboxId))
   }
 }
