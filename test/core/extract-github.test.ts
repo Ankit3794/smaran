@@ -32,3 +32,20 @@ test('a 403 (rate limit) raises a blocked error', async () => {
     kind: 'blocked',
   });
 });
+
+test.each(['orgs/ollama', 'topics/llm', 'sponsors/ollama', 'settings/profile', 'marketplace/actions'])(
+  'reserved path %s is a web page, not a repo',
+  async (path) => {
+    const url = `https://github.com/${path}`;
+    const { http, requests } = fakeHttp({ [url]: '<html><head><meta property="og:title" content="A page"></head></html>' });
+    const result = await githubExtractor(url, { http, allowMirrors: true });
+    expect(result.title).toBe('A page');
+    expect(requests).toHaveLength(1);
+  },
+);
+
+test('a ".git" suffix is stripped from the repo name', async () => {
+  const { http, requests } = fakeHttp({ [API]: fixture('github-repo.json'), [`${API}/readme`]: fixture('github-readme.txt') });
+  await githubExtractor('https://github.com/ollama/ollama.git', { http, allowMirrors: true });
+  expect(requests[0].url).toBe(API);
+});

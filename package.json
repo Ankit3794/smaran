@@ -28,6 +28,7 @@
     "@types/react": "~19.3.0",
     "jest": "~30.5.2",
     "jest-expo": "~58.0.14",
+    "tsx": "^4.23.15",
     "typescript": "~6.0.3"
   },
   "scripts": {
@@ -35,7 +36,7 @@
     "android": "expo start --android",
     "lint": "expo lint",
     "test": "jest",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p test"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p test && tsc --noEmit -p scripts"
   },
   "private": true
 }

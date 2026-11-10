@@ -1,4 +1,5 @@
 // Tests the generic web extractor and the shared HTTP error mapping against a recorded article page.
+import { resolveShortLink } from '@/extract/http';
 import { webExtractor } from '@/extract/web';
 import { ExtractError } from '@/extract/types';
 import { fakeHttp, fixture } from '../helpers/fake-http';
@@ -33,4 +34,23 @@ test('decodes HTML entities in meta content', async () => {
   const { http } = fakeHttp({ 'https://a.com/x': html });
   const result = await webExtractor('https://a.com/x', { http, allowMirrors: true });
   expect(result.title).toBe("Tom & Jerry's");
+});
+
+test('resolveShortLink aborts a request that hangs past the timeout', async () => {
+  jest.useFakeTimers();
+  try {
+    const hangingHttp: typeof fetch = (_input, init) =>
+      new Promise((_resolve, reject) => init?.signal?.addEventListener('abort', () => reject(new Error('aborted'))));
+    const outcome = expect(resolveShortLink(hangingHttp, 'https://t.co/slow')).rejects.toMatchObject({ kind: 'network' });
+    await jest.advanceTimersByTimeAsync(15000);
+    await outcome;
+  } finally {
+    jest.useRealTimers();
+  }
+});
+
+test('resolveShortLink sends the default user agent and returns the final URL', async () => {
+  const { http, requests } = fakeHttp({ 'https://t.co/abc': 'ok' });
+  expect(await resolveShortLink(http, 'https://t.co/abc')).toBe('https://t.co/abc');
+  expect(requests[0].headers['User-Agent']).toContain('Mozilla/5.0');
 });

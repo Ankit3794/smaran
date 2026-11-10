@@ -40,9 +40,34 @@ test('link post without selftext uses title and linked URL', async () => {
   expect(result.author).toBe('u/paper_reader');
 });
 
-test('a 403 raises a blocked error', async () => {
-  const { http } = fakeHttp({ 'https://reddit.com/r/a/comments/1/y.json': 403 });
+test('a 403 on both the .json and the page itself raises a blocked error', async () => {
+  const { http } = fakeHttp({ 'https://reddit.com/r/a/comments/1/y.json': 403, 'https://reddit.com/r/a/comments/1/y': 403 });
   await expect(redditExtractor('https://reddit.com/r/a/comments/1/y', { http, allowMirrors: true })).rejects.toMatchObject({
     kind: 'blocked',
   });
+});
+
+test('each comment is one line and HTML entities are decoded in selftext and comments', async () => {
+  const listings = JSON.parse(fixture('reddit-self.json'));
+  listings[0].data.children[0].data.selftext = 'Tom &amp; Jerry &gt; &lt;b&gt; &quot;hi&quot; it&#39;s';
+  listings[1].data.children[0].data.body = 'line one\n\nline   two &amp; more';
+  const { http } = fakeHttp({ 'https://reddit.com/r/a/comments/1/y.json': JSON.stringify(listings) });
+  const result = await redditExtractor('https://reddit.com/r/a/comments/1/y', { http, allowMirrors: true });
+  expect(result.text).toContain(`Tom & Jerry > <b> "hi" it's`);
+  const commentLines = result.text!.split('Top comments:\n')[1].split('\n');
+  expect(commentLines).toHaveLength(5);
+  expect(commentLines[0]).toBe('- line one line two & more');
+});
+
+test('when .json is blocked, falls back to the page meta tags and takes the subreddit from the URL', async () => {
+  const html =
+    '<html><head><meta property="og:title" content="A post title"><meta property="og:description" content="Post preview"></head><body></body></html>';
+  const { http, requests } = fakeHttp({
+    'https://www.reddit.com/r/algotrading/comments/1/y.json': 403,
+    'https://www.reddit.com/r/algotrading/comments/1/y': html,
+  });
+  const result = await redditExtractor('https://www.reddit.com/r/algotrading/comments/1/y', { http, allowMirrors: true });
+  expect(requests).toHaveLength(2);
+  expect(result.title).toBe('A post title');
+  expect(result.extra?.subreddit).toBe('algotrading');
 });

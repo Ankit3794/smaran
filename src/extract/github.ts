@@ -6,11 +6,18 @@ import { webExtractor } from './web';
 
 const README_MAX_CHARS = 4000;
 
+// First path segments that GitHub uses for its own pages, so "github.com/orgs/x" is not a repo owned by "orgs".
+const RESERVED_FIRST_SEGMENTS = new Set([
+  'orgs', 'topics', 'sponsors', 'settings', 'marketplace', 'features', 'collections', 'explore',
+  'search', 'notifications', 'login', 'about', 'pricing', 'apps', 'users',
+]);
+
 export const githubExtractor: Extractor = async (url, ctx) => {
   const segments = new URL(url).pathname.split('/').filter(Boolean);
-  if (segments.length !== 2) return webExtractor(url, ctx);
+  if (segments.length !== 2 || RESERVED_FIRST_SEGMENTS.has(segments[0])) return webExtractor(url, ctx);
 
-  const [owner, repo] = segments;
+  const owner = segments[0];
+  const repo = segments[1].replace(/\.git$/, '');
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}`;
   const repoResponse = await fetchText(ctx.http, apiUrl);
   const readmeResponse = await fetchText(ctx.http, `${apiUrl}/readme`, {
