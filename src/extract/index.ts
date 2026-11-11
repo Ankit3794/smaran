@@ -2,12 +2,15 @@
 // Plain text notes have nothing to fetch, so they get no extractor.
 import type { Source } from '@/core/types';
 import { githubExtractor } from './github';
+import { hackerNewsExtractor } from './hackernews';
 import { instagramExtractor } from './instagram';
+import { linkedinExtractor } from './linkedin';
 import { redditExtractor } from './reddit';
 import { threadsExtractor } from './threads';
 import type { Extractor } from './types';
 import { webExtractor } from './web';
 import { xExtractor } from './x';
+import { youtubeExtractor } from './youtube';
 
 export function extractorFor(source: Source): Extractor | null {
   switch (source) {
@@ -21,6 +24,12 @@ export function extractorFor(source: Source): Extractor | null {
       return instagramExtractor;
     case 'threads':
       return threadsExtractor;
+    case 'youtube':
+      return youtubeExtractor;
+    case 'linkedin':
+      return linkedinExtractor;
+    case 'hackernews':
+      return hackerNewsExtractor;
     case 'web':
       return webExtractor;
     case 'text':

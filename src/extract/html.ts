@@ -86,3 +86,24 @@ export function mainText(html: string): string {
   const chosen = containerText.trim() ? containerText : paragraphText;
   return chosen.replace(/\s+/g, ' ').trim();
 }
+
+// Turns a short HTML fragment (a Hacker News post or comment) into plain text: tags dropped, entities decoded,
+// <p> as a blank line and <br> as a line break. Links keep their visible text, which on HN is the URL itself.
+export function htmlToText(html: string): string {
+  let text = '';
+  const parser = new Parser(
+    {
+      onopentag(name) {
+        if (name === 'p') text += '\n\n';
+        if (name === 'br') text += '\n';
+      },
+      ontext(chunk) {
+        text += chunk;
+      },
+    },
+    { decodeEntities: true },
+  );
+  parser.write(html);
+  parser.end();
+  return text.replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+}

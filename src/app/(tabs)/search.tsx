@@ -38,6 +38,9 @@ const SOURCE_CHOICES: Array<{ label: string; source?: Source }> = [
   { label: 'GitHub', source: 'github' },
   { label: 'Instagram', source: 'instagram' },
   { label: 'Threads', source: 'threads' },
+  { label: 'YouTube', source: 'youtube' },
+  { label: 'LinkedIn', source: 'linkedin' },
+  { label: 'Hacker News', source: 'hackernews' },
   { label: 'Web', source: 'web' },
   { label: 'Text', source: 'text' },
 ];

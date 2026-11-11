@@ -5,7 +5,7 @@
 export type Http = typeof fetch;
 
 // Where a saved item came from; decides which fetcher runs and which icon shows.
-export type Source = 'x' | 'reddit' | 'github' | 'instagram' | 'threads' | 'web' | 'text';
+export type Source = 'x' | 'reddit' | 'github' | 'instagram' | 'threads' | 'youtube' | 'linkedin' | 'hackernews' | 'web' | 'text';
 
 // Where a save is in the fetch-then-enrich pipeline.
 export type SaveStatus = 'fetching' | 'waiting_ai' | 'partial' | 'done';

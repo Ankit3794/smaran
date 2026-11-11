@@ -1,4 +1,4 @@
-// Tiny rounded square showing where a save came from (X, Reddit, GitHub, ...), as in the mockup's card meta row.
+// Tiny rounded square showing where a save came from (X, Reddit, GitHub, YouTube, ...), as in the mockup's card meta row.
 // Used by SaveCard.
 import { Text, View } from 'react-native';
 import type { Source } from '@/core/types';
@@ -10,6 +10,9 @@ const BADGES: Record<Source, { background: string; label: string }> = {
   github: { background: '#24292F', label: 'GH' },
   instagram: { background: '#DD2A7B', label: '◎' },
   threads: { background: '#000000', label: '@' },
+  youtube: { background: '#FF0000', label: '▶' },
+  linkedin: { background: '#0A66C2', label: 'in' },
+  hackernews: { background: '#FF6600', label: 'Y' },
   web: { background: '#6B7280', label: '↗' },
   text: { background: '#6B7280', label: '“' },
 };

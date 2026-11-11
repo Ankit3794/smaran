@@ -20,7 +20,10 @@ import { TopicPicker } from './TopicPicker';
 
 type Props = { saveId: number; onClose: () => void };
 
-const SOURCE_NAMES: Partial<Record<Source, string>> = { x: 'X', reddit: 'Reddit', github: 'GitHub', instagram: 'Instagram', threads: 'Threads' };
+const SOURCE_NAMES: Partial<Record<Source, string>> = {
+  x: 'X', reddit: 'Reddit', github: 'GitHub', instagram: 'Instagram', threads: 'Threads',
+  youtube: 'YouTube', linkedin: 'LinkedIn', hackernews: 'Hacker News',
+};
 
 function openButtonLabel(source: Source): string {
   const name = SOURCE_NAMES[source];
