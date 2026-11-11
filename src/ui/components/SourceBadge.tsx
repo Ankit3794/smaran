@@ -1,5 +1,5 @@
 // Tiny rounded square showing where a save came from (X, Reddit, GitHub, YouTube, ...), as in the mockup's card meta row.
-// Used by SaveCard.
+// Used by SaveCard and the save sheet at 15 px, and larger on the Search browse tiles and the Insights screen.
 import { Text, View } from 'react-native';
 import type { Source } from '@/core/types';
 import { fonts } from '@/ui/theme';
@@ -17,11 +17,11 @@ const BADGES: Record<Source, { background: string; label: string }> = {
   text: { background: '#6B7280', label: '“' },
 };
 
-export function SourceBadge({ source }: { source: Source }) {
+export function SourceBadge({ source, size = 15 }: { source: Source; size?: number }) {
   const badge = BADGES[source];
   return (
-    <View style={{ width: 15, height: 15, borderRadius: 4, backgroundColor: badge.background, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ color: '#fff', fontSize: 8.5, fontFamily: fonts.bodySemiBold }}>{badge.label}</Text>
+    <View style={{ width: size, height: size, borderRadius: size * 0.27, backgroundColor: badge.background, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ color: '#fff', fontSize: size * 0.57, fontFamily: fonts.bodySemiBold }}>{badge.label}</Text>
     </View>
   );
 }

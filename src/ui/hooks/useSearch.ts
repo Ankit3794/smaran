@@ -20,6 +20,9 @@ export function useSearch(query: string, filter: SearchFilter) {
   // The query the shown groups belong to, so the screen can tell "no matches" from "still searching".
   const [searchedQuery, setSearchedQuery] = useState('');
   const { since, source, topicId } = filter;
+  // The query and filters together: when the shown groups belong to the current key, the results are settled.
+  const key = JSON.stringify([query, since, source, topicId]);
+  const [searchedKey, setSearchedKey] = useState<string | null>(null);
   // Counts searches; an answer from an older search (slower than the latest one) is dropped.
   const latestSearch = useRef(0);
 
@@ -30,11 +33,12 @@ export function useSearch(query: string, filter: SearchFilter) {
         if (thisSearch !== latestSearch.current) return;
         setGroups(found);
         setSearchedQuery(query);
+        setSearchedKey(key);
       },
       // A failed search leaves the previous results on screen rather than blanking them.
       () => {},
     );
-  }, [db, query, since, source, topicId]);
+  }, [db, query, since, source, topicId, key]);
 
   useEffect(() => {
     const timer = setTimeout(runSearch, DEBOUNCE_MS);
@@ -45,5 +49,5 @@ export function useSearch(query: string, filter: SearchFilter) {
   }, [runSearch]);
   useReloadOnChange(runSearch, ['saves', 'save_tags', 'topics']);
 
-  return { groups, searchedQuery };
+  return { groups, searchedQuery, settled: searchedKey === key };
 }

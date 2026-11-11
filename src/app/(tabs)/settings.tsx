@@ -5,7 +5,6 @@ import { Alert, Linking, Pressable, ScrollView, Switch, Text, View } from 'react
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Constants from 'expo-constants';
-import { Directory, Paths } from 'expo-file-system';
 import { loadCredential, removeCredential } from '@/ai/credentials';
 import { DEFAULT_MODELS, MODEL_CHOICES } from '@/ai/providers/errors';
 import type { ProviderId } from '@/ai/types';
@@ -15,6 +14,7 @@ import { libraryStats } from '@/db/saves';
 import { getSetting, setSetting } from '@/db/settings';
 import { ChoiceModal } from '@/ui/components/ChoiceModal';
 import { useReloadOnChange } from '@/ui/hooks/useReloadOnChange';
+import { formatBytes, thumbnailFolderBytes } from '@/ui/storage';
 import { colors, fonts, radius } from '@/ui/theme';
 
 // How each provider is named in Settings, and what "connected" means for it.
@@ -36,20 +36,6 @@ interface SettingsState {
   allowMirrors: boolean;
   saveCount: number;
   libraryBytes: number;
-}
-
-function formatBytes(bytes: number): string {
-  if (bytes < 1024 * 1024) return `${Math.max(1, Math.round(bytes / 1024))} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-// Thumbnails are files next to the database; a folder that can't be read just doesn't count.
-function thumbnailBytes(): number {
-  try {
-    return new Directory(Paths.document, 'thumbs').size ?? 0;
-  } catch {
-    return 0;
-  }
 }
 
 function plural(count: number, one: string, many: string): string {
@@ -96,7 +82,7 @@ export default function SettingsScreen() {
         model: providerId === null ? '' : await getSetting(db, `model.${providerId}`, DEFAULT_MODELS[providerId]),
         allowMirrors: (await getSetting(db, 'allowMirrors', '1')) !== '0',
         saveCount: stats.count,
-        libraryBytes: stats.databaseBytes + thumbnailBytes(),
+        libraryBytes: stats.databaseBytes + thumbnailFolderBytes(),
       });
     })().catch(() => {
       // A failed read keeps whatever is on screen; the next change or app resume tries again.
@@ -173,7 +159,7 @@ export default function SettingsScreen() {
         )}
 
         <SectionHeader title="Library" />
-        <Row label="Saves on this phone" value={`${state.saveCount} · ${formatBytes(state.libraryBytes)}`} />
+        <Row label="Saves on this phone" sub="See your library in numbers" value={`${state.saveCount} · ${formatBytes(state.libraryBytes)}`} onPress={() => router.push('/insights')} />
         <Row label="Rename & merge topics" sub="Long-press a topic" onPress={() => router.push('/topics')} />
         <Row label="Export backup (.zip)" onPress={exportLibrary} />
         <Row label="Import backup" onPress={importLibrary} />

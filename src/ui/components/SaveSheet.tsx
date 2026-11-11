@@ -14,20 +14,16 @@ import { useReloadOnChange } from '@/ui/hooks/useReloadOnChange';
 import { colors, fonts, radius } from '@/ui/theme';
 import { Button } from './Button';
 import { SourceBadge } from './SourceBadge';
+import { SOURCE_NAMES } from '@/ui/sources';
 import { TagEditor } from './TagEditor';
 import { Thumb } from './Thumb';
 import { TopicPicker } from './TopicPicker';
 
 type Props = { saveId: number; onClose: () => void };
 
-const SOURCE_NAMES: Partial<Record<Source, string>> = {
-  x: 'X', reddit: 'Reddit', github: 'GitHub', instagram: 'Instagram', threads: 'Threads',
-  youtube: 'YouTube', linkedin: 'LinkedIn', hackernews: 'Hacker News',
-};
-
+// A plain web page or note has no app to name, so its button just opens the link.
 function openButtonLabel(source: Source): string {
-  const name = SOURCE_NAMES[source];
-  return name === undefined ? 'Open link ↗' : `Open on ${name} ↗`;
+  return source === 'web' || source === 'text' ? 'Open link ↗' : `Open on ${SOURCE_NAMES[source]} ↗`;
 }
 
 export function SaveSheet({ saveId, onClose }: Props) {

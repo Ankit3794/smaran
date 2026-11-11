@@ -1,18 +1,25 @@
 // The Search tab: type a keyword, narrow it by time / source / topic, and see results grouped by topic.
-// Results come from useSearch (FTS5 via searchSaves); tapping a result opens the same SaveSheet as the Timeline.
+// Before anything is typed or picked it shows SearchBrowse (recent searches, platforms, popular tags); a filter on its
+// own also lists saves. Results come from useSearch (FTS5 via searchSaves); tapping one opens the same SaveSheet as the Timeline.
 import { useState } from 'react';
 import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
 import type { Source } from '@/core/types';
+import { useDb } from '@/db/DbProvider';
+import { clearRecentSearches, rememberSearch } from '@/db/search';
 import { ChoiceModal } from '@/ui/components/ChoiceModal';
 import { DayHeader } from '@/ui/components/DayHeader';
 import { SaveCard } from '@/ui/components/SaveCard';
 import { SaveSheet } from '@/ui/components/SaveSheet';
+import { SearchBrowse } from '@/ui/components/SearchBrowse';
 import { SwipeToDelete } from '@/ui/components/SwipeToDelete';
 import { UndoBar } from '@/ui/components/UndoBar';
+import { useBrowse } from '@/ui/hooks/useBrowse';
 import { useSearch } from '@/ui/hooks/useSearch';
 import { useTopics } from '@/ui/hooks/useTopics';
 import { useUndoableDelete } from '@/ui/hooks/useUndoableDelete';
+import { ALL_SOURCES, SOURCE_NAMES } from '@/ui/sources';
 import { colors, fonts, radius } from '@/ui/theme';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -33,16 +40,7 @@ function timeChoices(now: number): TimeChoice[] {
 
 const SOURCE_CHOICES: Array<{ label: string; source?: Source }> = [
   { label: 'All sources' },
-  { label: 'X', source: 'x' },
-  { label: 'Reddit', source: 'reddit' },
-  { label: 'GitHub', source: 'github' },
-  { label: 'Instagram', source: 'instagram' },
-  { label: 'Threads', source: 'threads' },
-  { label: 'YouTube', source: 'youtube' },
-  { label: 'LinkedIn', source: 'linkedin' },
-  { label: 'Hacker News', source: 'hackernews' },
-  { label: 'Web', source: 'web' },
-  { label: 'Text', source: 'text' },
+  ...ALL_SOURCES.map((source) => ({ label: SOURCE_NAMES[source], source })),
 ];
 
 // A chip showing the current choice ("Any time ▾"); tapping it opens a small list of the other choices.
@@ -62,18 +60,41 @@ function FilterChip<T extends { label: string }>({ current, choices, onPick }: {
   );
 }
 
+const ANY_TIME: TimeChoice = { label: 'Any time' };
+const ALL_TOPICS: { label: string; topicId?: number } = { label: 'All topics' };
+
 export default function SearchScreen() {
+  const db = useDb();
+  const router = useRouter();
   const [query, setQuery] = useState('');
-  const [time, setTime] = useState<TimeChoice>({ label: 'Any time' });
+  const [time, setTime] = useState<TimeChoice>(ANY_TIME);
   const [sourceChoice, setSourceChoice] = useState(SOURCE_CHOICES[0]);
-  const [topicChoice, setTopicChoice] = useState<{ label: string; topicId?: number }>({ label: 'All topics' });
+  const [topicChoice, setTopicChoice] = useState(ALL_TOPICS);
   const [openSaveId, setOpenSaveId] = useState<number | null>(null);
   const { topics } = useTopics();
   const { pendingIds, remove, undo } = useUndoableDelete();
-  const { groups, searchedQuery } = useSearch(query, { since: time.since, source: sourceChoice.source, topicId: topicChoice.topicId });
+  const { groups, searchedQuery, settled } = useSearch(query, { since: time.since, source: sourceChoice.source, topicId: topicChoice.topicId });
+  const browse = useBrowse();
 
   const hasQuery = query.trim() !== '';
-  const topicChoices = () => [{ label: 'All topics' }, ...topics.map((topic) => ({ label: topic.name, topicId: topic.id }))];
+  const hasFilter = time.since !== undefined || sourceChoice.source !== undefined || topicChoice.topicId !== undefined;
+  const topicChoices = () => [ALL_TOPICS, ...topics.map((topic) => ({ label: topic.name, topicId: topic.id }))];
+
+  // A search counts as "made" when it is submitted or one of its results is opened.
+  function remember(searched: string) {
+    rememberSearch(db, searched).then(browse.reload, () => {});
+  }
+
+  function clearFilters() {
+    setTime(ANY_TIME);
+    setSourceChoice(SOURCE_CHOICES[0]);
+    setTopicChoice(ALL_TOPICS);
+  }
+
+  function openSave(id: number) {
+    if (hasQuery) remember(query);
+    setOpenSaveId(id);
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
@@ -86,6 +107,7 @@ export default function SearchScreen() {
           placeholderTextColor={colors.muted}
           autoCorrect={false}
           returnKeyType="search"
+          onSubmitEditing={() => remember(query)}
           style={{ flex: 1, paddingVertical: 11, fontFamily: fonts.body, fontSize: 14, color: colors.ink }}
         />
         {hasQuery && (
@@ -99,10 +121,24 @@ export default function SearchScreen() {
         <FilterChip current={time.label} choices={() => timeChoices(Date.now())} onPick={setTime} />
         <FilterChip current={sourceChoice.label} choices={() => SOURCE_CHOICES} onPick={setSourceChoice} />
         <FilterChip current={topicChoice.label} choices={topicChoices} onPick={setTopicChoice} />
+        {hasFilter && (
+          <Pressable accessibilityRole="button" accessibilityLabel="Clear filters" onPress={clearFilters} style={{ paddingVertical: 6, paddingHorizontal: 8 }}>
+            <Text style={{ fontFamily: fonts.bodyMedium, fontSize: 12, color: colors.accent }}>✕ Clear</Text>
+          </Pressable>
+        )}
       </View>
 
-      {/* Results are capped by what one keyword matches, so a plain ScrollView is enough here (no virtualised list). */}
+      {/* Results are capped (by what one keyword matches, or 200 when browsing by filter), so a plain ScrollView is enough. */}
       <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 24 }}>
+        {!hasQuery && !hasFilter && (
+          <SearchBrowse
+            {...browse}
+            onSearch={setQuery}
+            onPickSource={(source) => setSourceChoice({ label: SOURCE_NAMES[source], source })}
+            onClearRecent={() => clearRecentSearches(db).then(browse.reload, () => {})}
+            onOpenInsights={() => router.push('/insights')}
+          />
+        )}
         {groups.map((group) => (
           <View key={group.topicId ?? 'unsorted'}>
             <DayHeader title={group.topicName} sub={group.saves.length === 1 ? '1 result' : `${group.saves.length} results`} />
@@ -110,7 +146,7 @@ export default function SearchScreen() {
               .filter((save) => !pendingIds.includes(save.id))
               .map((save) => (
                 <SwipeToDelete key={save.id} testID={`swipe-${save.id}`} onDelete={() => remove(save.id)}>
-                  <SaveCard save={save} query={searchedQuery} showTopic={false} onPress={() => setOpenSaveId(save.id)} />
+                  <SaveCard save={save} query={searchedQuery} showTopic={false} onPress={() => openSave(save.id)} />
                 </SwipeToDelete>
               ))}
           </View>
@@ -118,7 +154,10 @@ export default function SearchScreen() {
         {hasQuery && searchedQuery === query && groups.length === 0 && (
           <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.muted, paddingHorizontal: 16, paddingTop: 16 }}>No saves match "{query.trim()}".</Text>
         )}
-        <Text style={{ fontFamily: fonts.body, fontSize: 11, color: colors.muted, paddingHorizontal: 16, paddingTop: 8 }}>
+        {!hasQuery && hasFilter && settled && groups.length === 0 && (
+          <Text style={{ fontFamily: fonts.body, fontSize: 13, color: colors.muted, paddingHorizontal: 16, paddingTop: 16 }}>No saves match these filters.</Text>
+        )}
+        <Text style={{ fontFamily: fonts.body, fontSize: 11, color: colors.muted, paddingHorizontal: 16, paddingTop: 16 }}>
           Searches summaries, tags, titles, authors and post text.
         </Text>
       </ScrollView>

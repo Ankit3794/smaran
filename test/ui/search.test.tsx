@@ -9,7 +9,8 @@ import type { Source } from '@/core/types';
 import type { Db } from '@/db/db';
 import { openTestDb } from '../helpers/sqlite';
 
-jest.mock('expo-router', () => ({ useRouter: () => ({ push: jest.fn(), back: jest.fn() }) }));
+const mockPush = jest.fn();
+jest.mock('expo-router', () => ({ useRouter: () => ({ push: mockPush, back: jest.fn() }) }));
 jest.mock('expo-linear-gradient', () => ({ LinearGradient: ({ children }: { children: React.ReactNode }) => children }));
 jest.mock('expo-sqlite', () => ({ addDatabaseChangeListener: () => ({ remove: jest.fn() }) }));
 
@@ -17,20 +18,20 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const now = Date.now();
 
 let nextInboxId = 1;
-async function save(db: Db, summary: string, topic: string, source: Source, savedAt: number) {
+async function save(db: Db, summary: string, topic: string, source: Source, savedAt: number, tags: string[] = []) {
   const url = `https://example.com/${nextInboxId}`;
   const { id } = await createOrBumpSave(db, {
     inboxId: nextInboxId, url, canonicalUrl: url, source, sourceApp: null, sharedText: '', note: null, now: savedAt,
   });
   nextInboxId += 1;
-  await applyEnrichment(db, id, { summary, brief: 'brief', topic, tags: [] }, savedAt);
+  await applyEnrichment(db, id, { summary, brief: 'brief', topic, tags }, savedAt);
 }
 
 async function seed() {
   const db = openTestDb();
   await migrate(db);
-  await save(db, 'Options flow scanner for unusual activity', 'Trading', 'x', now - 1000);
-  await save(db, 'Momentum scanner for crypto pairs', 'Trading', 'github', now - 20 * DAY_MS);
+  await save(db, 'Options flow scanner for unusual activity', 'Trading', 'x', now - 1000, ['options']);
+  await save(db, 'Momentum scanner for crypto pairs', 'Trading', 'github', now - 20 * DAY_MS, ['crypto', 'options']);
   await save(db, 'Fast open-source TLS scanner', 'Security', 'reddit', now - 2 * DAY_MS);
   await save(db, 'A recipe for sourdough', 'Cooking', 'web', now - 1000);
   return db;
@@ -97,4 +98,62 @@ describe('Search tab', () => {
     await fireEvent.changeText(screen.getByPlaceholderText('Search your saves'), 'zebra');
     expect(await screen.findByText('No saves match "zebra".')).toBeTruthy();
   });
+});
+
+describe('Search tab before typing', () => {
+  it('shows each platform with its save count, and popular tags', async () => {
+    await renderSearch();
+    const xTile = await screen.findByRole('button', { name: 'X, 1 save' });
+    expect(xTile).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'GitHub, 1 save' })).toBeTruthy();
+    // Platforms with no saves are left out.
+    expect(screen.queryByRole('button', { name: /^YouTube/ })).toBeNull();
+    expect(screen.getByRole('button', { name: 'Tag options, 2 saves' })).toBeTruthy();
+  });
+
+  it('tapping a platform lists its saves without typing anything', async () => {
+    await renderSearch();
+    await fireEvent.press(await screen.findByRole('button', { name: 'Reddit, 1 save' }));
+    expect(await screen.findByText('Fast open-source TLS scanner')).toBeTruthy();
+    expect(screen.queryByText('A recipe for sourdough')).toBeNull();
+    // The source chip shows what is applied, and "Clear" puts the browse view back.
+    expect(screen.getByText('Reddit')).toBeTruthy();
+    await fireEvent.press(screen.getByRole('button', { name: 'Clear filters' }));
+    expect(await screen.findByRole('button', { name: 'Reddit, 1 save' })).toBeTruthy();
+  });
+
+  it('tapping a tag searches for it', async () => {
+    await renderSearch();
+    await fireEvent.press(await screen.findByRole('button', { name: 'Tag options, 2 saves' }));
+    expect(screen.getByPlaceholderText('Search your saves').props.value).toBe('options');
+    expect(await screen.findByText('2 results')).toBeTruthy();
+  });
+
+  it('remembers submitted searches; tapping one runs it again, and Clear forgets them', async () => {
+    await renderSearch();
+    const input = screen.getByPlaceholderText('Search your saves');
+    await fireEvent.changeText(input, 'sourdough');
+    await fireEvent(input, 'submitEditing');
+    await fireEvent.press(screen.getByRole('button', { name: 'Clear search' }));
+
+    await fireEvent.press(await screen.findByRole('button', { name: 'Search again for sourdough' }));
+    expect(await screen.findByText('A recipe for sourdough')).toBeTruthy();
+
+    await fireEvent.press(screen.getByRole('button', { name: 'Clear search' }));
+    await fireEvent.press(await screen.findByRole('button', { name: 'Clear recent searches' }));
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Search again for sourdough' })).toBeNull());
+  });
+
+  it('links to the Insights screen', async () => {
+    await renderSearch();
+    await fireEvent.press(await screen.findByRole('button', { name: 'Your library in numbers' }));
+    expect(mockPush).toHaveBeenCalledWith('/insights');
+  });
+});
+
+it('a filter with no matching saves says so', async () => {
+  await renderSearch();
+  await screen.findByRole('button', { name: 'X, 1 save' });
+  await pickFilter('All sources', 'LinkedIn');
+  expect(await screen.findByText('No saves match these filters.')).toBeTruthy();
 });

@@ -3,7 +3,7 @@
 import { openTestDb } from '../helpers/sqlite';
 import { migrate } from '@/db/migrate';
 import { applyEnrichment, createOrBumpSave, updateFetched } from '@/db/saves';
-import { searchSaves, toFtsQuery } from '@/db/search';
+import { clearRecentSearches, popularTags, recentSearches, rememberSearch, searchSaves, toFtsQuery } from '@/db/search';
 
 async function freshDb() {
   const db = openTestDb();
@@ -89,5 +89,51 @@ describe('searchSaves', () => {
     await applyEnrichment(db, strong, { summary: 'scanner', brief: 'b', topic: 'Strong', tags: [] }, 100);
     const groups = await searchSaves(db, 'scanner', {});
     expect(groups.map((group) => group.topicName)).toEqual(['Strong', 'Weak']);
+  });
+});
+
+describe('browsing without a keyword', () => {
+  it('with a filter but no words, lists every save matching the filter, newest first', async () => {
+    const db = await freshDb();
+    await addSave(db, 100, 'web');
+    const olderTweet = await addSave(db, 200, 'x');
+    const newerTweet = await addSave(db, 300, 'x');
+    const groups = await searchSaves(db, '  ', { source: 'x' });
+    expect(groups.flatMap((group) => group.saves.map((save) => save.id))).toEqual([newerTweet, olderTweet]);
+  });
+
+  it('with no words and no filter, returns nothing (the screen shows the browse view instead)', async () => {
+    const db = await freshDb();
+    await addSave(db, 100, 'web');
+    expect(await searchSaves(db, '', {})).toEqual([]);
+  });
+});
+
+describe('popularTags', () => {
+  it('counts each tag across all saves, most used first', async () => {
+    const db = await freshDb();
+    for (const tags of [['rust', 'cli'], ['rust'], ['ai']]) {
+      const id = await addSave(db, 100);
+      await applyEnrichment(db, id, { summary: 's', brief: 'b', topic: 'Dev', tags }, 100);
+    }
+    expect(await popularTags(db, 2)).toEqual([{ name: 'rust', count: 2 }, { name: 'ai', count: 1 }]);
+  });
+});
+
+describe('recent searches', () => {
+  it('keeps the newest first, without repeats (ignoring case), and at most 8', async () => {
+    const db = await freshDb();
+    for (const q of ['one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine']) await rememberSearch(db, q);
+    await rememberSearch(db, ' Three ');
+    expect(await recentSearches(db)).toEqual(['Three', 'nine', 'eight', 'seven', 'six', 'five', 'four', 'two']);
+  });
+
+  it('ignores blank searches and can be cleared', async () => {
+    const db = await freshDb();
+    await rememberSearch(db, 'rust');
+    await rememberSearch(db, '   ');
+    expect(await recentSearches(db)).toEqual(['rust']);
+    await clearRecentSearches(db);
+    expect(await recentSearches(db)).toEqual([]);
   });
 });

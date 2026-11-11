@@ -114,7 +114,8 @@ describe('Settings tab', () => {
     const db = await libraryWithSaves(3);
     await renderWithDb(db, <SettingsScreen />);
     expect(await screen.findByText(/^3 · \d+(\.\d)? MB$/)).toBeTruthy();
-    expect(screen.getByText('Saves on this phone')).toBeTruthy();
+    await fireEvent.press(screen.getByText('Saves on this phone'));
+    expect(mockPush).toHaveBeenCalledWith('/insights');
     await fireEvent.press(screen.getByText('Rename & merge topics'));
     expect(mockPush).toHaveBeenCalledWith('/topics');
 
