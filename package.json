@@ -9,6 +9,7 @@
     "@shopify/flash-list": "2.3.2",
     "expo": "~58.0.23",
     "expo-background-task": "~58.0.12",
+    "expo-build-properties": "~58.0.12",
     "expo-clipboard": "~58.0.4",
     "expo-constants": "~58.0.15",
     "expo-crypto": "~58.0.7",
@@ -51,6 +52,7 @@
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
+    "apk": "EXPO_NO_GIT_STATUS=1 expo prebuild --clean --platform android && cd android && ./gradlew assembleRelease && mkdir -p ../dist && cp app/build/outputs/apk/release/app-release.apk ../dist/smaran.apk && echo 'APK ready: dist/smaran.apk'",
     "lint": "expo lint",
     "test": "jest",
     "typecheck": "tsc --noEmit && tsc --noEmit -p test && tsc --noEmit -p scripts"

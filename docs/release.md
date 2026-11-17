@@ -47,22 +47,22 @@ Keep `package.json`'s `version` in step with `expo.version`.
 
 ```bash
 npx jest && npm run typecheck
-npx expo prebuild --clean          # regenerates android/ with the signing config
-cd android && ./gradlew assembleRelease
+npm run apk
 ```
 
-The APK is at `android/app/build/outputs/apk/release/app-release.apk`. Check that it's signed with your key, not the
-debug one:
+`npm run apk` does a clean build: `expo prebuild --clean --platform android` deletes and regenerates `android/` (with
+the signing config), then `./gradlew assembleRelease` builds the APK and it is copied to `dist/smaran.apk` (`dist/` is
+gitignored). Check that it's signed with your key, not the debug one:
 
 ```bash
-$ANDROID_HOME/build-tools/*/apksigner verify --print-certs android/app/build/outputs/apk/release/app-release.apk
+$ANDROID_HOME/build-tools/*/apksigner verify --print-certs dist/smaran.apk
 ```
 
 The certificate's DN should show your name, not `CN=Android Debug`.
 
 ## 5. Check it on a phone
 
-Install it with `adb install -r android/app/build/outputs/apk/release/app-release.apk`, then:
+Install it with `adb install -r dist/smaran.apk`, then:
 
 1. Share a link from X, Reddit, Instagram, GitHub and a browser. Each shows the "Saved" card and gets a summary.
 2. Share one of them again: the card says "Already saved". Add a note: it appears on the existing save.
@@ -70,7 +70,7 @@ Install it with `adb install -r android/app/build/outputs/apk/release/app-releas
 4. Airplane mode → share → back online → it finishes on its own (or tap **Retry now**).
 5. Find "the trading thing from two nights ago" in 3 taps or fewer: Timeline → Trading chip → that day.
 6. Search for a word from a post. The match is highlighted.
-7. **Settings → Export backup**, then **Import backup** of that file on the same phone: "Added 0 saves. N were already here."
+7. **Settings → Save backup to phone**, pick a folder such as Documents (Android won't allow the Download folder itself; make a subfolder), then **Import backup** of that file on the same phone: "Added 0 saves. N were already here."
 8. Sign in with each provider you support (subscription and API key), and disconnect.
 9. While doing all of this, `adb logcat | grep -iE "FATAL|fts5"` stays empty.
 
@@ -81,6 +81,6 @@ git tag v0.1.0
 git push origin v0.1.0
 ```
 
-On GitHub, create a release from the tag, attach `app-release.apk`, and paste the "what leaves your phone" and
+On GitHub, create a release from the tag, attach `dist/smaran.apk`, and paste the "what leaves your phone" and
 subscription sign-in sections of the README into the notes. Once the repo is public, set `expo.extra.sourceUrl` in
 `app.json` to the repository URL so **Settings → About** links to it.

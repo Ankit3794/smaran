@@ -68,6 +68,16 @@ The first build takes a while. Later builds are incremental. For a faster build 
 you develop, and run `adb reverse tcp:8081 tcp:8081` if the phone is on USB. A release build bundles the JavaScript
 inside the APK and needs no Metro. See [docs/release.md](docs/release.md).
 
+### A release APK in one command
+
+```bash
+npm run apk                   # clean build: regenerates android/, builds the release APK, copies it to dist/smaran.apk
+```
+
+Then install it with `adb install -r dist/smaran.apk`, or copy the file to the phone and open it. It is signed with your
+upload key once that is set up (docs/release.md, steps 1 and 2); until then it uses Expo's debug key, which is fine for
+your own phone but must not be published.
+
 ### Tests and type checks
 
 ```bash

@@ -35,11 +35,22 @@
       "expo-background-task",
       "./modules/share-receiver/plugin/withShareReceiver.js",
       "expo-sharing",
-      "./plugins/withReleaseSigning.js"
+      "./plugins/withReleaseSigning.js",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraProguardRules": "# WorkManager (used by expo-background-task) creates its Room database by reflection.\n# Room 2.6's own rule keeps the class but not its constructor, so R8 strips it and the release app crashes at launch.\n-keep class * extends androidx.room.RoomDatabase { <init>(); }"
+          }
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "ios": {
+      "bundleIdentifier": "app.smaran"
     }
   }
 }
