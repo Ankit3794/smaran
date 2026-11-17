@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 🔒 Report a security problem
+    url: https://github.com/Ankit3794/smaran/security/advisories/new
+    about: Please report security problems privately, not in a public issue.
+  - name: 💬 Questions and ideas
+    url: https://github.com/Ankit3794/smaran/discussions
+    about: Ask how something works, or talk through an idea before opening an issue.

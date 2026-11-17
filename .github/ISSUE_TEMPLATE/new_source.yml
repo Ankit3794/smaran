@@ -1,0 +1,30 @@
+name: 🌐 New or better source
+description: Ask Smaran to read a site it doesn't support yet, or to read one better.
+labels: [source]
+body:
+  - type: input
+    id: site
+    attributes:
+      label: Site or app
+      placeholder: Bluesky
+    validations:
+      required: true
+  - type: textarea
+    id: examples
+    attributes:
+      label: Example public links
+      description: One or two links to public posts, so we can see what the site returns.
+      placeholder: https://bsky.app/profile/…/post/…
+    validations:
+      required: true
+  - type: textarea
+    id: today
+    attributes:
+      label: What does Smaran save today?
+      description: For example, "only the link, no title or summary" or "the caption is cut off".
+  - type: checkboxes
+    id: help
+    attributes:
+      label: Want to build it?
+      options:
+        - label: I'd like to try adding this source myself (see CONTRIBUTING.md, "Add a new source")

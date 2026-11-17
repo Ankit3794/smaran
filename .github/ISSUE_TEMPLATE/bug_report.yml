@@ -1,0 +1,71 @@
+name: 🐞 Bug report
+description: Something in Smaran doesn't work the way it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! Please **don't paste API keys, sign-in codes or private links** here.
+        For a security problem, use [private reporting](https://github.com/Ankit3794/smaran/security/advisories/new) instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what did you see instead?
+      placeholder: I shared a YouTube Shorts link from the YouTube app. The card said "Saved" but the save never got a summary.
+    validations:
+      required: true
+  - type: input
+    id: link
+    attributes:
+      label: Link you shared (if any, and not private)
+      placeholder: https://x.com/…/status/…
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where in the app?
+      options:
+        - Share card ("Saved")
+        - Summary, topic or tags (AI)
+        - Reading a site (title, text, image)
+        - Timeline
+        - Topics
+        - Search
+        - Sign-in or API key
+        - Backup or import
+        - Settings
+        - Something else
+    validations:
+      required: true
+  - type: dropdown
+    id: ai
+    attributes:
+      label: Which AI are you connected to?
+      options:
+        - Claude (subscription)
+        - Claude (API key)
+        - ChatGPT (subscription)
+        - OpenAI (API key)
+        - Gemini (Google sign-in)
+        - Gemini (API key)
+        - None yet
+  - type: input
+    id: version
+    attributes:
+      label: Smaran version
+      description: Settings → About
+      placeholder: 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: phone
+    attributes:
+      label: Phone and Android version
+      placeholder: Pixel 8, Android 16
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, a screen recording, or `adb logcat` output if you have it.

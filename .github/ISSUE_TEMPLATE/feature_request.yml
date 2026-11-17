@@ -1,0 +1,22 @@
+name: 💡 Idea
+description: Suggest something new for Smaran.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+      description: Start with the situation, not the solution.
+      placeholder: When I save a lot of trading posts I can't tell which ones I've already read.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: What would you like to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Anything you've tried or considered?

@@ -51,6 +51,9 @@
     },
     "ios": {
       "bundleIdentifier": "app.smaran"
+    },
+    "extra": {
+      "sourceUrl": "https://github.com/Ankit3794/smaran"
     }
   }
 }
