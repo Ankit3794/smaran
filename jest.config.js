@@ -9,6 +9,9 @@ const esmPackages =
   '@shopify/flash-list|@noble/hashes|htmlparser2|domhandler|domutils|domelementtype|entities|dom-serializer';
 
 module.exports = {
+  // On a cold cache (every CI run, or after `--no-cache`) the first UI test in a file also pays for Babel converting
+  // React Native and Expo, which can take well over Jest's default 5 s. The tests themselves are fast.
+  testTimeout: 30000,
   projects: [
     { displayName: 'core', preset: 'jest-expo/node', moduleNameMapper: aliasToSource, transformIgnorePatterns: [`/node_modules/(?!(${esmPackages}))`], testMatch: ['<rootDir>/test/core/**/*.test.ts'] },
     { displayName: 'ui', preset: 'jest-expo/android', moduleNameMapper: aliasToSource, transformIgnorePatterns: [`/node_modules/(?!(${esmPackages}))`], testMatch: ['<rootDir>/test/ui/**/*.test.{ts,tsx}'] },
