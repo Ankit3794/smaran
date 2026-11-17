@@ -7,7 +7,7 @@ import TabsLayout from '@/app/(tabs)/_layout';
 import WelcomeScreen from '@/app/onboarding/welcome';
 import PinTipScreen from '@/app/onboarding/pin';
 import { loadCredential, removeCredential } from '@/ai/credentials';
-import { exportBackupFile, importBackupFile } from '@/backup/backupFiles';
+import { importBackupFile, saveBackupToFolder, shareBackupFile } from '@/backup/backupFiles';
 import { DbContext } from '@/db/DbProvider';
 import { migrate } from '@/db/migrate';
 import { createOrBumpSave } from '@/db/saves';
@@ -40,7 +40,7 @@ jest.mock('expo-sqlite', () => ({ addDatabaseChangeListener: () => ({ remove: je
 jest.mock('expo-constants', () => ({ expoConfig: { version: '1.0.0', extra: { sourceUrl: 'https://github.com/example/smaran' } } }));
 jest.mock('expo-file-system', () => ({ Paths: { document: 'file:///doc/' }, Directory: jest.fn(() => ({ size: 2_500_000 })) }));
 jest.mock('@/ai/credentials', () => ({ loadCredential: jest.fn(), removeCredential: jest.fn() }));
-jest.mock('@/backup/backupFiles', () => ({ exportBackupFile: jest.fn(), importBackupFile: jest.fn() }));
+jest.mock('@/backup/backupFiles', () => ({ ...jest.requireActual('@/backup/backupFiles'), saveBackupToFolder: jest.fn(), shareBackupFile: jest.fn(), importBackupFile: jest.fn() }));
 
 async function libraryWithSaves(count: number) {
   const db = openTestDb();
@@ -119,12 +119,37 @@ describe('Settings tab', () => {
     await fireEvent.press(screen.getByText('Rename & merge topics'));
     expect(mockPush).toHaveBeenCalledWith('/topics');
 
-    await fireEvent.press(screen.getByText('Export backup (.zip)'));
-    expect(exportBackupFile).toHaveBeenCalledWith(db);
+    await fireEvent.press(screen.getByText('Share backup'));
+    expect(shareBackupFile).toHaveBeenCalledWith(db);
 
     jest.mocked(importBackupFile).mockResolvedValue({ added: 4, skipped: 1 });
     await fireEvent.press(screen.getByText('Import backup'));
     await waitFor(() => expect(Alert.alert).toHaveBeenCalledWith('Backup imported', 'Added 4 saves. 1 was already here.'));
+  });
+
+  it('saves a backup into a picked folder, and starts there next time', async () => {
+    const db = await libraryWithSaves(1);
+    await renderWithDb(db, <SettingsScreen />);
+    const folderUri = 'content://com.android.externalstorage.documents/tree/primary%3ADocuments%2FSmaran';
+    jest.mocked(saveBackupToFolder).mockResolvedValue({ folderUri, fileName: 'smaran-backup-2026-11-16.zip' });
+
+    await fireEvent.press(await screen.findByText('Save backup to phone (.zip)'));
+    await waitFor(() => expect(Alert.alert).toHaveBeenCalledWith('Backup saved', 'smaran-backup-2026-11-16.zip is in the "Smaran" folder on your phone.'));
+    expect(saveBackupToFolder).toHaveBeenLastCalledWith(db, undefined);
+    expect(await getSetting(db, 'backupFolderUri', '')).toBe(folderUri);
+
+    await fireEvent.press(screen.getByText('Save backup to phone (.zip)'));
+    await waitFor(() => expect(saveBackupToFolder).toHaveBeenLastCalledWith(db, folderUri));
+  });
+
+  it('closing the folder picker saves nothing and says nothing', async () => {
+    const db = await libraryWithSaves(1);
+    await renderWithDb(db, <SettingsScreen />);
+    jest.mocked(saveBackupToFolder).mockResolvedValue(null);
+    await fireEvent.press(await screen.findByText('Save backup to phone (.zip)'));
+    await waitFor(() => expect(saveBackupToFolder).toHaveBeenCalled());
+    expect(Alert.alert).not.toHaveBeenCalled();
+    expect(await getSetting(db, 'backupFolderUri', '')).toBe('');
   });
 
   it('has the public mirrors switch, on by default', async () => {

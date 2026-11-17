@@ -8,7 +8,7 @@ import Constants from 'expo-constants';
 import { loadCredential, removeCredential } from '@/ai/credentials';
 import { DEFAULT_MODELS, MODEL_CHOICES } from '@/ai/providers/errors';
 import type { ProviderId } from '@/ai/types';
-import { exportBackupFile, importBackupFile } from '@/backup/backupFiles';
+import { folderLabel, importBackupFile, saveBackupToFolder, shareBackupFile } from '@/backup/backupFiles';
 import { useDb } from '@/db/DbProvider';
 import { libraryStats } from '@/db/saves';
 import { getSetting, setSetting } from '@/db/settings';
@@ -114,9 +114,22 @@ export default function SettingsScreen() {
     ]);
   }
 
-  async function exportLibrary() {
+  async function saveBackup() {
     try {
-      await exportBackupFile(db);
+      // The picker opens where the last backup went, so later backups are two taps.
+      const lastFolder = await getSetting(db, 'backupFolderUri', '');
+      const saved = await saveBackupToFolder(db, lastFolder || undefined);
+      if (saved === null) return;
+      await setSetting(db, 'backupFolderUri', saved.folderUri);
+      Alert.alert('Backup saved', `${saved.fileName} is in the "${folderLabel(saved.folderUri)}" folder on your phone.`);
+    } catch (error) {
+      Alert.alert("Couldn't save the backup", error instanceof Error ? error.message : 'Please try again.');
+    }
+  }
+
+  async function shareBackup() {
+    try {
+      await shareBackupFile(db);
     } catch (error) {
       Alert.alert("Couldn't export", error instanceof Error ? error.message : 'Please try again.');
     }
@@ -161,7 +174,8 @@ export default function SettingsScreen() {
         <SectionHeader title="Library" />
         <Row label="Saves on this phone" sub="See your library in numbers" value={`${state.saveCount} · ${formatBytes(state.libraryBytes)}`} onPress={() => router.push('/insights')} />
         <Row label="Rename & merge topics" sub="Long-press a topic" onPress={() => router.push('/topics')} />
-        <Row label="Export backup (.zip)" onPress={exportLibrary} />
+        <Row label="Save backup to phone (.zip)" sub="Pick a folder, e.g. Documents" onPress={saveBackup} />
+        <Row label="Share backup" sub="Send the .zip to Drive, email and so on" onPress={shareBackup} />
         <Row label="Import backup" onPress={importLibrary} />
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: colors.line }}>
           <View style={{ flex: 1 }}>
