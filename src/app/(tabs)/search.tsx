@@ -13,7 +13,6 @@ import { DayHeader } from '@/ui/components/DayHeader';
 import { SaveCard } from '@/ui/components/SaveCard';
 import { SaveSheet } from '@/ui/components/SaveSheet';
 import { SearchBrowse } from '@/ui/components/SearchBrowse';
-import { SwipeToDelete } from '@/ui/components/SwipeToDelete';
 import { UndoBar } from '@/ui/components/UndoBar';
 import { useBrowse } from '@/ui/hooks/useBrowse';
 import { useSearch } from '@/ui/hooks/useSearch';
@@ -145,9 +144,7 @@ export default function SearchScreen() {
             {group.saves
               .filter((save) => !pendingIds.includes(save.id))
               .map((save) => (
-                <SwipeToDelete key={save.id} testID={`swipe-${save.id}`} onDelete={() => remove(save.id)}>
-                  <SaveCard save={save} query={searchedQuery} showTopic={false} onPress={() => openSave(save.id)} />
-                </SwipeToDelete>
+                <SaveCard key={save.id} save={save} query={searchedQuery} showTopic={false} onPress={() => openSave(save.id)} onDelete={() => remove(save.id)} />
               ))}
           </View>
         ))}

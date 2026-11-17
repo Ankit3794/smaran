@@ -11,7 +11,6 @@ import { DayHeader } from '@/ui/components/DayHeader';
 import { QueueBanner } from '@/ui/components/QueueBanner';
 import { SaveCard } from '@/ui/components/SaveCard';
 import { SaveSheet } from '@/ui/components/SaveSheet';
-import { SwipeToDelete } from '@/ui/components/SwipeToDelete';
 import { TopicChips } from '@/ui/components/TopicChips';
 import { UndoBar } from '@/ui/components/UndoBar';
 import { useQueue } from '@/ui/hooks/useQueue';
@@ -32,7 +31,7 @@ export default function TimelineScreen() {
 
   const rows = useMemo<Row[]>(
     () =>
-      // Swiped-away saves disappear at once, while their Undo is still on offer.
+      // Deleted saves disappear at once, while their Undo is still on offer.
       groupByDay(saves.filter((save) => !pendingIds.includes(save.id)), Date.now()).flatMap((group) => [
         { kind: 'header' as const, key: `day-${group.key}`, title: group.title, sub: group.sub },
         ...group.saves.map((save) => ({ kind: 'save' as const, key: `save-${save.id}`, save })),
@@ -68,9 +67,7 @@ export default function TimelineScreen() {
           item.kind === 'header' ? (
             <DayHeader title={item.title} sub={item.sub} />
           ) : (
-            <SwipeToDelete testID={`swipe-${item.save.id}`} onDelete={() => remove(item.save.id)}>
-              <SaveCard save={item.save} onPress={() => setOpenSaveId(item.save.id)} />
-            </SwipeToDelete>
+            <SaveCard save={item.save} onPress={() => setOpenSaveId(item.save.id)} onDelete={() => remove(item.save.id)} />
           )
         }
         ListEmptyComponent={

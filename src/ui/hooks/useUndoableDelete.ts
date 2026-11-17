@@ -1,4 +1,4 @@
-// Swipe-to-delete with Undo for list screens. A swiped save is hidden straight away and really deleted a few seconds
+// Delete with Undo for list screens (long press a card, then Delete). A deleted save is hidden straight away and really deleted a few seconds
 // later, unless the user taps Undo. Leaving the screen deletes whatever is still waiting, so nothing comes back.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDb } from '@/db/DbProvider';
@@ -31,7 +31,7 @@ export function useUndoableDelete() {
     [db, update],
   );
 
-  // Brings back the most recently swiped save.
+  // Brings back the most recently deleted save.
   const undo = useCallback(() => {
     const last = pending.current.at(-1);
     if (last === undefined) return;

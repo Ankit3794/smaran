@@ -1,4 +1,4 @@
-// The "Deleted · Undo" bar shown at the bottom of a list for a few seconds after a swipe-delete.
+// The "Deleted · Undo" bar shown at the bottom of a list for a few seconds after a delete from a list.
 // Renders nothing when there is nothing to undo.
 import { Pressable, Text, View } from 'react-native';
 import { colors, fonts, radius } from '@/ui/theme';

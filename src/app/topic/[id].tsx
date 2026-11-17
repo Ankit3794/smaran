@@ -11,7 +11,6 @@ import { topTags } from '@/db/topics';
 import { JournalLine } from '@/ui/components/JournalLine';
 import { SaveCard } from '@/ui/components/SaveCard';
 import { SaveSheet } from '@/ui/components/SaveSheet';
-import { SwipeToDelete } from '@/ui/components/SwipeToDelete';
 import { TopicActions } from '@/ui/components/TopicActions';
 import { UndoBar } from '@/ui/components/UndoBar';
 import { useReloadOnChange } from '@/ui/hooks/useReloadOnChange';
@@ -111,9 +110,7 @@ export default function TopicDetailScreen() {
         <JournalLine
           groups={groupByDay(saves.filter((save) => !pendingIds.includes(save.id)), Date.now())}
           renderSave={(save) => (
-            <SwipeToDelete testID={`swipe-${save.id}`} onDelete={() => remove(save.id)}>
-              <SaveCard save={save} showTopic={false} onPress={() => setOpenSaveId(save.id)} />
-            </SwipeToDelete>
+            <SaveCard save={save} showTopic={false} onPress={() => setOpenSaveId(save.id)} onDelete={() => remove(save.id)} />
           )}
         />
       </ScrollView>

@@ -1,7 +1,8 @@
-// UI tests for Gmail-style swipe-to-delete on the Timeline: swiping a card left reveals a Delete button; tapping it
+// UI tests for long-press delete on the Timeline: long-pressing a card asks "Delete this save?"; choosing Delete
 // hides the card at once, Undo brings it back, and the save is only deleted from the database once the undo window
-// has passed. Real SQLite; Jest cannot swipe, so the revealed button is always rendered (see test/ui/setup.ts).
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+// has passed. Real SQLite; only the Alert is faked, pressing whichever button the test picks.
+import { Alert } from 'react-native';
+import { act, fireEvent, render, screen } from '@testing-library/react-native';
 import '@shopify/flash-list/jestSetup';
 import TimelineScreen from '@/app/(tabs)/index';
 import { DbContext } from '@/db/DbProvider';
@@ -27,25 +28,32 @@ async function libraryWithOneSave() {
   return { db, id };
 }
 
-async function tapRevealedDelete() {
-  await fireEvent.press(screen.getByLabelText('Delete save'));
+// Long-presses the card and answers the "Delete this save?" alert with the given button.
+async function longPressAndChoose(button: 'Delete' | 'Cancel') {
+  const alert = jest.spyOn(Alert, 'alert').mockImplementation((_title, _message, buttons) => buttons?.find((b) => b.text === button)?.onPress?.());
+  await fireEvent(screen.getByText('Options flow scanner'), 'longPress');
+  expect(alert).toHaveBeenCalledWith('Delete this save?', undefined, expect.any(Array));
 }
 
 const saveCount = async (db: Db) => (await db.getAllAsync('SELECT id FROM saves')).length;
 
-afterEach(() => jest.useRealTimers());
+afterEach(() => {
+  jest.useRealTimers();
+  jest.restoreAllMocks();
+});
 
-it('opening the swipe alone deletes nothing', async () => {
-  const { db, id } = await libraryWithOneSave();
-  await act(async () => screen.getByTestId(`swipe-${id}`).props.onSwipeableOpen?.('right'));
+it('cancelling the long-press prompt deletes nothing', async () => {
+  const { db } = await libraryWithOneSave();
+  await longPressAndChoose('Cancel');
   expect(screen.getByText('Options flow scanner')).toBeTruthy();
+  expect(screen.queryByText('Save deleted')).toBeNull();
   expect(await saveCount(db)).toBe(1);
 });
 
-it('tapping the revealed Delete hides the card at once and deletes it after the undo window', async () => {
+it('choosing Delete hides the card at once and deletes it after the undo window', async () => {
   const { db } = await libraryWithOneSave();
   jest.useFakeTimers();
-  await tapRevealedDelete();
+  await longPressAndChoose('Delete');
   expect(screen.queryByText('Options flow scanner')).toBeNull();
   expect(screen.getByText('Save deleted')).toBeTruthy();
   expect(await saveCount(db)).toBe(1);
@@ -58,7 +66,7 @@ it('tapping the revealed Delete hides the card at once and deletes it after the 
 it('Undo brings the card back and nothing is deleted', async () => {
   const { db } = await libraryWithOneSave();
   jest.useFakeTimers();
-  await tapRevealedDelete();
+  await longPressAndChoose('Delete');
   await fireEvent.press(screen.getByText('Undo'));
   expect(screen.getByText('Options flow scanner')).toBeTruthy();
   await act(async () => jest.advanceTimersByTime(UNDO_WINDOW_MS));

@@ -1,7 +1,9 @@
 // One save in a list (Timeline, topic detail, search results): thumbnail, one-line summary, and a meta row
 // (source, author, time, topic). With a search `query`, the matched words in the summary are marked.
 // Shows "Reading…" / "Waiting for AI" in place of the topic while the pipeline hasn't finished.
-import { Pressable, Text, View } from 'react-native';
+// With `onDelete`, a long press asks "Delete this save?" first. (This replaced swipe-to-delete: a swipe gesture on every
+// card fought the list's own scrolling and made scrolling stutter whenever a finger started on a card.)
+import { Alert, Pressable, Text, View } from 'react-native';
 import { clockTime } from '@/core/dates';
 import type { Save } from '@/core/types';
 import { colors, fonts, radius } from '@/ui/theme';
@@ -9,7 +11,7 @@ import { Highlight } from './Highlight';
 import { SourceBadge } from './SourceBadge';
 import { Thumb } from './Thumb';
 
-type Props = { save: Save; onPress: () => void; showTopic?: boolean; query?: string };
+type Props = { save: Save; onPress: () => void; onDelete?: () => void; showTopic?: boolean; query?: string };
 
 // Best available description, from most to least refined.
 function headline(save: Save): string {
@@ -30,11 +32,20 @@ function StatusOrTopic({ save, showTopic }: { save: Save; showTopic: boolean }) 
   );
 }
 
-export function SaveCard({ save, onPress, showTopic = true, query = '' }: Props) {
+function askToDelete(onDelete: () => void) {
+  Alert.alert('Delete this save?', undefined, [
+    { text: 'Cancel', style: 'cancel' },
+    { text: 'Delete', style: 'destructive', onPress: onDelete },
+  ]);
+}
+
+export function SaveCard({ save, onPress, onDelete, showTopic = true, query = '' }: Props) {
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityHint={onDelete ? 'Long press to delete' : undefined}
       onPress={onPress}
+      onLongPress={onDelete ? () => askToDelete(onDelete) : undefined}
       style={{ flexDirection: 'row', alignItems: 'center', gap: 11, paddingVertical: 9, paddingHorizontal: 12, marginHorizontal: 10, marginBottom: 7, backgroundColor: colors.card, borderRadius: radius, borderWidth: 1, borderColor: colors.line }}
     >
       <Thumb save={save} size={48} />

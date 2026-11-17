@@ -11,6 +11,6 @@ const esmPackages =
 module.exports = {
   projects: [
     { displayName: 'core', preset: 'jest-expo/node', moduleNameMapper: aliasToSource, transformIgnorePatterns: [`/node_modules/(?!(${esmPackages}))`], testMatch: ['<rootDir>/test/core/**/*.test.ts'] },
-    { displayName: 'ui', preset: 'jest-expo/android', moduleNameMapper: aliasToSource, transformIgnorePatterns: [`/node_modules/(?!(${esmPackages}))`], testMatch: ['<rootDir>/test/ui/**/*.test.{ts,tsx}'], setupFiles: ['<rootDir>/test/ui/setup.ts'] },
+    { displayName: 'ui', preset: 'jest-expo/android', moduleNameMapper: aliasToSource, transformIgnorePatterns: [`/node_modules/(?!(${esmPackages}))`], testMatch: ['<rootDir>/test/ui/**/*.test.{ts,tsx}'] },
   ],
 };
