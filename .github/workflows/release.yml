@@ -75,7 +75,7 @@ jobs:
           cache: npm
 
       # Caches Gradle's downloads between releases, which makes later builds much faster.
-      - uses: gradle/actions/setup-gradle@v4
+      - uses: gradle/actions/setup-gradle@v6
 
       - name: Install dependencies
         run: npm ci
