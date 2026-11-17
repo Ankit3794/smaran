@@ -1,0 +1,9 @@
+# Dependabot opens a pull request each month when a GitHub Action used in .github/workflows has a new version.
+# npm packages are left out on purpose: Expo packages must move together with the Expo SDK
+# (`npx expo install --fix`), and single-package bumps from Dependabot would break the build.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

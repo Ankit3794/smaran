@@ -76,11 +76,53 @@ Install it with `adb install -r dist/smaran.apk`, then:
 
 ## 6. Tag and publish
 
+Commit the version bump, then tag it:
+
 ```bash
 git tag v0.1.0
-git push origin v0.1.0
+git push origin main v0.1.0
 ```
 
-On GitHub, create a release from the tag, attach `dist/smaran.apk`, and paste the "what leaves your phone" and
-subscription sign-in sections of the README into the notes. Once the repo is public, set `expo.extra.sourceUrl` in
-`app.json` to the repository URL so **Settings → About** links to it.
+Pushing the tag starts the **Release** workflow (`.github/workflows/release.yml`). It runs the tests, builds the APK,
+signs it with your upload key, checks that it isn't debug-signed, and publishes a GitHub Release with:
+
+- `smaran-v0.1.0.apk` and its `.sha256` checksum,
+- the install and privacy notes from `.github/release-notes.md`, and
+- an automatic list of the pull requests and commits since the last release.
+
+It takes about 15–25 minutes. Watch it under the repo's **Actions** tab. A tag with a dash, such as `v0.2.0-beta.1`,
+is published as a pre-release. If the tag doesn't match `app.json` and `package.json`, the workflow stops before
+building.
+
+Steps 4 and 5 are still worth doing on your laptop before you tag: the workflow builds the same APK, but it can't try
+it on a phone.
+
+### Releasing with GitHub Actions: one-time setup
+
+The workflow needs your upload key, stored as **repository secrets**. GitHub encrypts them, and no one can read them
+back, not even you. Forks and pull requests never get them.
+
+1. Turn the keystore into text:
+
+   ```bash
+   base64 -w0 ~/keys/smaran-upload.keystore > /tmp/keystore.txt
+   ```
+
+2. On GitHub, open the repo's **Settings → Secrets and variables → Actions → New repository secret** and add:
+
+   | Name | Value |
+   | --- | --- |
+   | `SMARAN_UPLOAD_KEYSTORE_BASE64` | the contents of `/tmp/keystore.txt` |
+   | `SMARAN_UPLOAD_STORE_PASSWORD` | your store password |
+   | `SMARAN_UPLOAD_KEY_ALIAS` | `smaran-upload` |
+   | `SMARAN_UPLOAD_KEY_PASSWORD` | your key password |
+
+3. Delete `/tmp/keystore.txt`.
+
+The same key has to sign every release, whether it's built on your laptop or by GitHub, so keep your own backup of
+the keystore too. GitHub's copy can't be downloaded.
+
+### Releasing by hand (without Actions)
+
+Build with `npm run apk` (step 4). On GitHub, create a release from the tag, attach `dist/smaran.apk`, and paste
+`.github/release-notes.md` into the notes.
